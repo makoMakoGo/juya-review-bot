@@ -19,6 +19,7 @@ RUN npm ci --omit=dev \
 
 RUN useradd --create-home --uid 10001 appuser
 COPY src ./src
+COPY assets ./assets
 RUN chown -R appuser:appuser /app
 
 EXPOSE 3007

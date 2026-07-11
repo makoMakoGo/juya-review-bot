@@ -75,13 +75,14 @@ export function renderLayout({ title, active = 'dashboard', csrfToken = '', body
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(title)} · ${escapeHtml(PRODUCT.consoleName)}</title>
+<link rel="icon" type="image/jpeg" href="${escapeAttribute(PRODUCT.iconPath)}">
 ${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>
 </head>
 <body>
 <a class="skip-link" href="#main" data-i18n="skip_to_main">Skip to main</a>
 <div class="app">
   <aside class="side">
-    <a class="brand" href="/admin/"><span class="mark">${escapeHtml(SIDEBAR_NAME[0])}</span><span class="brand-name">${escapeHtml(SIDEBAR_NAME)}</span></a>
+    <a class="brand" href="/admin/"><img class="brand-icon" src="${escapeAttribute(PRODUCT.iconPath)}" width="28" height="28" alt=""><span class="brand-name">${escapeHtml(SIDEBAR_NAME)}</span></a>
     <nav class="nav" aria-label="Sections" data-i18n-aria-label="aria_sections">${navItems}</nav>
     <div class="side-foot" data-i18n="nav_side_foot">Powered by ${escapeHtml(ENGINE.name)}</div>
   </aside>
@@ -115,13 +116,14 @@ export function renderLoginPage({ csrfToken = '', error = '', disabledReason = '
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · ${escapeHtml(PRODUCT.consoleName)}</title>
+<link rel="icon" type="image/jpeg" href="${escapeAttribute(PRODUCT.iconPath)}">
 ${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>
 </head>
 <body class="login-body">
 <div class="login-shell">
   <div class="login-toolbar">${togglesHtml()}</div>
   <main class="login-card">
-    <div class="login-brand"><span class="mark">${escapeHtml(SIDEBAR_NAME[0])}</span><span class="login-brand-name">${escapeHtml(PRODUCT.consoleName)}</span></div>
+    <div class="login-brand"><img class="brand-icon" src="${escapeAttribute(PRODUCT.iconPath)}" width="32" height="32" alt=""><span class="login-brand-name">${escapeHtml(PRODUCT.consoleName)}</span></div>
     <h1 class="login-title" data-i18n="login_title">Sign in</h1>
     <p class="login-sub muted" data-i18n="login_sub">${escapeHtml(PRODUCT.name)} administration</p>
     ${message}${form}
@@ -1205,17 +1207,14 @@ h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; }
   display: flex; align-items: center; gap: 9px; padding: 4px 6px;
   font-size: 15px; font-weight: 650; color: var(--text); text-decoration: none; letter-spacing: -0.01em;
 }
-.side .brand .mark {
-  width: 28px; height: 28px; border-radius: 7px; background: var(--text); color: #fff;
-  display: grid; place-items: center; font-weight: 700; font-size: 13px; letter-spacing: -0.02em; flex: none;
-}
+.side .brand .brand-icon { width: 28px; height: 28px; }
+.brand-icon { object-fit: cover; border: 1px solid var(--border); border-radius: 6px; box-shadow: none; flex: none; }
 .side .brand-name { font-weight: 650; }
 .side .brand-tag {
   margin-left: auto; font-size: 11px; font-weight: 500; color: var(--faint);
   border: 1px solid var(--border); padding: 1px 7px; border-radius: 20px; line-height: 1.4;
 }
 .side .brand:hover { text-decoration: none; }
-.side .brand:hover .mark { opacity: 0.88; }
 .nav { display: flex; flex-direction: column; gap: 2px; }
 .nav a {
   display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none;
@@ -1448,10 +1447,7 @@ nav.pagination span[aria-disabled=true] { opacity: 0.5; }
   border-radius: 12px; padding: 28px 28px 24px; box-shadow: var(--shadow-flat);
 }
 .login-brand { display: flex; align-items: center; gap: 10px; margin: 0 0 18px; }
-.login-brand .mark {
-  width: 28px; height: 28px; border-radius: 7px; background: var(--text); color: #fff;
-  display: grid; place-items: center; font-weight: 700; font-size: 13px;
-}
+.login-brand .brand-icon { width: 32px; height: 32px; }
 .login-brand-name { font-size: 14px; font-weight: 600; color: var(--text); }
 .login-title { margin: 0 0 4px; font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
 .login-sub { margin: 0 0 20px; font-size: 14px; }

@@ -16,6 +16,7 @@ const GIT_TIMEOUT_MS = 180_000;
 const STDERR_CAPTURE_LIMIT_BYTES = 64 * 1024;
 const STDERR_CHUNK_CALLBACK_LIMIT_BYTES = 4 * 1024;
 const VALID_OCR_STATUSES = new Set(['success', 'completed_with_warnings', 'completed_with_errors', 'skipped']);
+const PRODUCT_ICON_FILE = new URL('../assets/juya.jpg', import.meta.url);
 
 function requiredEnv(name, env = process.env) {
   const value = env[name];
@@ -902,6 +903,17 @@ function createServer(config, options = {}) {
     try {
       if (!acceptingRequests) {
         json(res, 503, { error: 'server shutting down' });
+        return;
+      }
+      if (req.method === 'GET' && req.url === PRODUCT.iconPath) {
+        const body = await fs.readFile(PRODUCT_ICON_FILE);
+        res.writeHead(200, {
+          'Content-Type': 'image/jpeg',
+          'Content-Length': body.length,
+          'X-Content-Type-Options': 'nosniff',
+          'Cache-Control': 'public, max-age=3600',
+        });
+        res.end(body);
         return;
       }
       if (req.url === '/admin') {

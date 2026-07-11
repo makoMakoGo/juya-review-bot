@@ -461,6 +461,11 @@ test('admin router stays hidden when disabled and serves dashboard after login',
     secureCookies: true,
     loadDashboard: () => ({ summary: { queued: 0, running: 0, succeeded: 1, failed: 0 }, recentJobs: [], diagnostics: [] }),
   });
+  const loginPage = await router.route({ method: 'GET', url: '/admin/login', headers: { host: 'juya.011070.xyz' } });
+  assert.equal(loginPage.status, 200);
+  assert.match(loginPage.body, /Sign in · Juya Console/);
+  assert.match(loginPage.body, /<img class="brand-icon" src="\/admin\/assets\/juya\.jpg" width="32" height="32" alt="">/);
+  assert.match(loginPage.body, /Juya Review Bot administration/);
   const login = await router.route({
     method: 'POST',
     url: '/admin/login',
@@ -475,6 +480,9 @@ test('admin router stays hidden when disabled and serves dashboard after login',
   const dashboard = await router.route({ method: 'GET', url: '/admin/', headers: { host: 'juya.011070.xyz', cookie } });
   assert.equal(dashboard.status, 200);
   assert.match(dashboard.body, /Status · Juya Console/);
+  assert.match(dashboard.body, /<img class="brand-icon" src="\/admin\/assets\/juya\.jpg" width="28" height="28" alt="">/);
+  assert.match(dashboard.body, /<span class="muted">juya<\/span>/);
+  assert.match(dashboard.body, /Powered by OpenCodeReview/);
 });
 
 test('admin router uses configured session TTL, cookie security, flash, and security headers', async () => {

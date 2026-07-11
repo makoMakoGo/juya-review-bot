@@ -10,6 +10,8 @@ test('htmlResponse stamps CSP script-src nonce matching scriptTag output', () =>
   assert.ok(match, 'CSP contains a script-src nonce');
   const nonce = match[1];
   assert.match(body, new RegExp(`<script nonce="${nonce}">var x=1;</script>`));
+  assert.match(csp, /img-src 'self'/);
+  assert.doesNotMatch(csp, /img-src[^;]*(?:https?:|\*)/);
 });
 
 test('htmlResponse does not grant a nonce to a bare injected <script>', () => {
@@ -25,10 +27,10 @@ test('an injected script carrying a fixed marker string is NOT granted the nonce
   // replaced on the final HTML, so a script containing a known/placeholder
   // nonce value must NOT pick up the response nonce (CSP stays a real backstop
   // and legitimate content containing the string is never rewritten).
-  const { headers, body } = htmlResponse((nonce) => `${scriptTag('ok();', nonce)}<script nonce="__ocr_csp_nonce__">evil();</script>`);
+  const { headers, body } = htmlResponse((nonce) => `${scriptTag('ok();', nonce)}<script nonce="__juya_csp_nonce__">evil();</script>`);
   const nonce = headers['content-security-policy'].match(/script-src 'nonce-([^']+)'/)[1];
-  assert.notEqual(nonce, '__ocr_csp_nonce__');
-  assert.match(body, /<script nonce="__ocr_csp_nonce__">evil\(\);<\/script>/);
+  assert.notEqual(nonce, '__juya_csp_nonce__');
+  assert.match(body, /<script nonce="__juya_csp_nonce__">evil\(\);<\/script>/);
   assert.doesNotMatch(body, new RegExp(`<script nonce="${nonce}">evil`));
 });
 
