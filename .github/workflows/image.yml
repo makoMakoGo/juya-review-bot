@@ -80,7 +80,7 @@ jobs:
             fi
           done
 
-      - name: Check OCR JSON contract
+      - name: Check OCR skipped-result JSON envelope
         shell: bash
         run: |
           set -euo pipefail
@@ -120,8 +120,15 @@ jobs:
             console.error(JSON.stringify(result, null, 2));
             process.exit(1);
           }
-          const commentCount = Array.isArray(result.comments) ? result.comments.length : 0;
-          console.log(`validated OCR JSON status=${result.status} comments=${commentCount}`);
+          if (result.status !== 'skipped') {
+            console.error(`Expected no-diff review status "skipped", received ${JSON.stringify(result.status)}.`);
+            process.exit(1);
+          }
+          if (!Array.isArray(result.comments) || result.comments.length !== 0) {
+            console.error('Expected an empty comments array for the no-diff review.');
+            process.exit(1);
+          }
+          console.log('validated OCR skipped-result JSON envelope');
           NODE
           SH
           )"
@@ -142,7 +149,7 @@ jobs:
             echo
             echo "- Installed version: \`$OCR_VERSION\`"
             echo '- `ocr review` CLI contract: passed'
-            echo '- OCR JSON output contract: passed'
+            echo '- OCR skipped-result JSON envelope: passed'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Login to GHCR
