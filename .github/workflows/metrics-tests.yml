@@ -6,6 +6,7 @@ on:
       - 'src/admin/metrics.js'
       - 'src/admin/metrics-page.js'
       - 'src/admin/router.js'
+      - 'src/admin/index.js'
       - 'test/admin-metrics.test.js'
       - 'test/admin-dashboard-status.test.js'
       - '.github/workflows/metrics-tests.yml'
@@ -26,5 +27,15 @@ jobs:
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Install dependencies
         run: npm ci
-      - name: Run metrics tests
+      - name: Run focused metrics tests
         run: node --test test/admin-metrics.test.js test/admin-dashboard-status.test.js
+      - name: Run full suite with concise failure output
+        shell: bash
+        run: |
+          set -o pipefail
+          if npm test > /tmp/juya-tests.log 2>&1; then
+            tail -n 40 /tmp/juya-tests.log
+          else
+            tail -n 240 /tmp/juya-tests.log
+            exit 1
+          fi
