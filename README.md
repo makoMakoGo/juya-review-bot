@@ -110,7 +110,7 @@ docker run --rm --entrypoint ocr juya-review-bot:dev --version
 docker run --rm --entrypoint ocr juya-review-bot:dev review --help
 ```
 
-`review --help` 必须继续提供 `--from`、`--to`、`--format`、`--concurrency`、`--max-git-procs` 和 `--timeout`。镜像 workflow 还会在容器内创建一个无 diff 的临时 Git 仓库，执行真实的 `ocr review --format json`，再使用 Juya runtime 自己的 `validateOcrResult` 校验输出；这个检查不需要访问 LLM provider。
+`review --help` 必须继续提供 `--from`、`--to`、`--format`、`--concurrency`、`--max-git-procs` 和 `--timeout`。镜像 workflow 还会在容器内创建一个无 diff 的临时 Git 仓库，执行真实的 `ocr review --format json`，并用 Juya runtime 自己的 `validateOcrResult` 验证 no-diff 路径返回 `status: "skipped"` 和空 `comments` 数组。这个端到端检查只覆盖 skipped-result envelope，不访问 LLM provider；其他受支持状态的 validator 行为由 Node 测试覆盖。
 
 ## VPS 部署
 
@@ -187,10 +187,10 @@ POST /admin/*
 
 ## OpenCodeReview `@latest` 策略
 
-镜像构建时执行 `npm install -g @alibaba-group/open-code-review@latest`。CI 每日使用 `--pull --no-cache` 重新解析 npm 当前的 `@latest`，校验实际版本、Juya 依赖的 CLI flags 和真实 JSON 输出契约，全部通过后才以 `latest` 和 `ocr-<实际版本>` 发布镜像。镜像运行时设置 `OCR_NO_UPDATE=1`，因此 OpenCodeReview engine 不会在容器启动或执行审查时自行更新。
+镜像构建时执行 `npm install -g @alibaba-group/open-code-review@latest`。CI 每日使用 `--pull --no-cache` 重新解析 npm 当前的 `@latest`，校验实际版本、Juya 依赖的 CLI flags 和 no-diff skipped-result JSON envelope，全部通过后才以 `latest` 和 `ocr-<实际版本>` 发布镜像。镜像运行时设置 `OCR_NO_UPDATE=1`，因此 OpenCodeReview engine 不会在容器启动或执行审查时自行更新。
 
 这个策略有意不 pin OpenCodeReview engine 版本：同一 Git commit 在不同日期构建可能解析到不同版本，所以构建不保证可复现。实际 engine 版本由镜像标签、构建日志和 GitHub Actions job summary 记录。
 
 ## 许可证
 
-本仓库使用 [Apache License 2.0](LICENSE)，项目与上游归属见 [NOTICE](NOTICE)。Powered by OpenCodeReview；底层 npm 包及其归属、许可证和商标由 OpenCodeReview 项目维护，本仓库的产品身份为 Juya Review Bot。
+本仓库使用 [Apache License 2.0](LICENSE)，项目与上游归属见 [NOTICE](NOTICE)。发布镜像会将两份文件复制到 `/usr/share/licenses/juya-review-bot/`。Powered by OpenCodeReview；底层 npm 包及其归属、许可证和商标由 OpenCodeReview 项目维护，本仓库的产品身份为 Juya Review Bot。
