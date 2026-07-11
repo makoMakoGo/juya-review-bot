@@ -1,33 +1,28 @@
-name: github-app-bot image
+name: Juya Review Bot Image
 
 on:
   pull_request:
-    branches:
-      - selfhost/github-app
-    paths:
-      - "github-app-bot/**"
-      - ".github/workflows/github-app-bot-image.yml"
   push:
-    branches:
-      - selfhost/github-app
-    paths:
-      - "github-app-bot/**"
-      - ".github/workflows/github-app-bot-image.yml"
+    branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * *'
 
 permissions:
   contents: read
   packages: write
 
 concurrency:
-  group: github-app-bot-image-${{ github.ref }}
+  group: juya-review-bot-image-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   image:
     runs-on: ubuntu-latest
+    env:
+      LOCAL_IMAGE: juya-review-bot:${{ github.run_id }}-${{ github.run_attempt }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           persist-credentials: false
 
@@ -37,7 +32,63 @@ jobs:
         shell: bash
         run: |
           owner="${GITHUB_REPOSITORY_OWNER,,}"
-          echo "IMAGE_NAME=ghcr.io/${owner}/open-code-review-github-app-bot" >> "$GITHUB_ENV"
+          echo "IMAGE_NAME=ghcr.io/${owner}/juya-review-bot" >> "$GITHUB_ENV"
+
+      - name: Build image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx build \
+            --load \
+            --pull \
+            --no-cache \
+            --file ./Dockerfile \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "$LOCAL_IMAGE" \
+            .
+
+      - name: Resolve installed OpenCodeReview version
+        shell: bash
+        run: |
+          set -euo pipefail
+          ocr_version_output="$(docker run --rm --entrypoint ocr "$LOCAL_IMAGE" --version)"
+          printf '%s\n' "$ocr_version_output"
+          ocr_version="$(
+            docker run --rm --entrypoint node "$LOCAL_IMAGE" -e \
+              "const { execFileSync } = require('node:child_process'); const root = execFileSync('npm', ['root', '-g'], { encoding: 'utf8' }).trim(); process.stdout.write(require(root + '/@alibaba-group/open-code-review/package.json').version);"
+          )"
+          if [[ ! "$ocr_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid installed OpenCodeReview version: $ocr_version" >&2
+            exit 1
+          fi
+          if ! grep -F -- "$ocr_version" <<<"$ocr_version_output" >/dev/null; then
+            echo "ocr --version did not report installed package version $ocr_version" >&2
+            exit 1
+          fi
+          echo "OCR_VERSION=$ocr_version" >> "$GITHUB_ENV"
+
+      - name: Check OCR CLI contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          help_output="$(docker run --rm --entrypoint ocr "$LOCAL_IMAGE" review --help)"
+          printf '%s\n' "$help_output"
+          for flag in --from --to --format --concurrency --max-git-procs --timeout; do
+            if ! grep -F -- "$flag" <<<"$help_output" >/dev/null; then
+              echo "Missing required ocr review flag: $flag" >&2
+              exit 1
+            fi
+          done
+
+      - name: Write engine summary
+        shell: bash
+        run: |
+          {
+            echo '## OpenCodeReview engine'
+            echo
+            echo "- Installed version: \`$OCR_VERSION\`"
+            echo '- `ocr review` CLI contract: passed'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
@@ -47,25 +98,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build PR image
-        if: github.event_name == 'pull_request'
-        run: |
-          docker buildx build \
-            --load \
-            --pull \
-            --no-cache \
-            --file github-app-bot/Dockerfile \
-            --tag "$IMAGE_NAME:pr-${{ github.event.pull_request.number }}" \
-            github-app-bot
-
-      - name: Build and push image
+      - name: Push image
         if: github.event_name != 'pull_request'
+        shell: bash
         run: |
-          docker buildx build \
-            --pull \
-            --no-cache \
-            --file github-app-bot/Dockerfile \
-            --tag "$IMAGE_NAME:latest" \
-            --tag "$IMAGE_NAME:${GITHUB_SHA}" \
-            --push \
-            github-app-bot
+          set -euo pipefail
+          docker tag "$LOCAL_IMAGE" "$IMAGE_NAME:latest"
+          docker tag "$LOCAL_IMAGE" "$IMAGE_NAME:ocr-$OCR_VERSION"
+          docker push "$IMAGE_NAME:latest"
+          docker push "$IMAGE_NAME:ocr-$OCR_VERSION"
