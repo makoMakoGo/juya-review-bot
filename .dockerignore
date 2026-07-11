@@ -2,8 +2,6 @@
 .git
 .github
 README.md
-LICENSE
-NOTICE
 
 # Local runtime config, deployment files, and state never enter Docker builds.
 .env
