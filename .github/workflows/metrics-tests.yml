@@ -1,0 +1,29 @@
+name: Metrics Tests
+
+on:
+  pull_request:
+    paths:
+      - 'src/admin/metrics.js'
+      - 'src/admin/metrics-page.js'
+      - 'src/admin/router.js'
+      - 'test/admin-metrics.test.js'
+      - '.github/workflows/metrics-tests.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  metrics:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Trust workspace
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+      - name: Install dependencies
+        run: npm ci
+      - name: Run metrics tests
+        run: node --test test/admin-metrics.test.js
