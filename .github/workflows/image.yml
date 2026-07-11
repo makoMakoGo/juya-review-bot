@@ -26,7 +26,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Compute image name
         shell: bash
@@ -80,6 +80,60 @@ jobs:
             fi
           done
 
+      - name: Check OCR JSON contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          contract_script="$(cat <<'SH'
+          set -eu
+          workdir="$(mktemp -d)"
+          cd "$workdir"
+          git init -q
+          git config user.name "Juya Contract Test"
+          git config user.email "contract-test@invalid"
+          printf 'contract\n' > README.txt
+          git add README.txt
+          git commit -qm init
+
+          ocr review \
+            --from HEAD \
+            --to HEAD \
+            --format json \
+            --concurrency 1 \
+            --max-git-procs 1 \
+            --timeout 1 \
+            > /tmp/ocr-contract.json
+
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const { validateOcrResult } = await import('/app/src/server.js');
+          const raw = fs.readFileSync('/tmp/ocr-contract.json', 'utf8');
+          let result;
+          try {
+            result = JSON.parse(raw);
+          } catch (error) {
+            console.error(`OCR returned invalid JSON: ${error.message}`);
+            process.exit(1);
+          }
+          if (!validateOcrResult(result)) {
+            console.error('OCR output does not satisfy the Juya runtime contract.');
+            console.error(JSON.stringify(result, null, 2));
+            process.exit(1);
+          }
+          const commentCount = Array.isArray(result.comments) ? result.comments.length : 0;
+          console.log(`validated OCR JSON status=${result.status} comments=${commentCount}`);
+          NODE
+          SH
+          )"
+          docker run --rm \
+            --entrypoint /bin/sh \
+            -e OCR_LLM_URL=http://127.0.0.1:9 \
+            -e OCR_LLM_TOKEN=contract-test \
+            -e OCR_LLM_MODEL=contract-test \
+            -e OCR_USE_ANTHROPIC=false \
+            "$LOCAL_IMAGE" \
+            -ec "$contract_script"
+
       - name: Write engine summary
         shell: bash
         run: |
@@ -88,11 +142,12 @@ jobs:
             echo
             echo "- Installed version: \`$OCR_VERSION\`"
             echo '- `ocr review` CLI contract: passed'
+            echo '- OCR JSON output contract: passed'
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Login to GHCR
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
