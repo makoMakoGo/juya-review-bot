@@ -34,8 +34,14 @@ jobs:
         run: |
           set -o pipefail
           if npm test > /tmp/juya-tests.log 2>&1; then
-            tail -n 40 /tmp/juya-tests.log
+            tail -n 20 /tmp/juya-tests.log
           else
-            tail -n 240 /tmp/juya-tests.log
+            awk '
+              /^not ok / { printing = 1; remaining = 45 }
+              printing { print; remaining -= 1 }
+              printing && remaining == 0 { printing = 0 }
+            ' /tmp/juya-tests.log
+            echo '--- summary ---'
+            tail -n 20 /tmp/juya-tests.log
             exit 1
           fi
