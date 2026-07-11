@@ -110,7 +110,7 @@ docker run --rm --entrypoint ocr juya-review-bot:dev --version
 docker run --rm --entrypoint ocr juya-review-bot:dev review --help
 ```
 
-`review --help` 必须继续提供 `--from`、`--to`、`--format`、`--concurrency`、`--max-git-procs` 和 `--timeout`。
+`review --help` 必须继续提供 `--from`、`--to`、`--format`、`--concurrency`、`--max-git-procs` 和 `--timeout`。镜像 workflow 还会在容器内创建一个无 diff 的临时 Git 仓库，执行真实的 `ocr review --format json`，再使用 Juya runtime 自己的 `validateOcrResult` 校验输出；这个检查不需要访问 LLM provider。
 
 ## VPS 部署
 
@@ -132,6 +132,14 @@ docker compose up -d
 ```
 
 Compose 使用 `ghcr.io/makomakogo/juya-review-bot:latest`、非 root UID/GID `10001:10001`、只读私钥挂载、持久化 `data/`，并只在 `127.0.0.1:3007` 暴露服务。
+
+GHCR package 设为 public 时可以匿名拉取。若保持 private，请先在 VPS 使用具有 `read:packages` 权限的 token 登录：
+
+```bash
+printf '%s' "$GHCR_TOKEN" | docker login ghcr.io \
+  --username makoMakoGo \
+  --password-stdin
+```
 
 健康检查：
 
@@ -179,10 +187,10 @@ POST /admin/*
 
 ## OpenCodeReview `@latest` 策略
 
-镜像构建时执行 `npm install -g @alibaba-group/open-code-review@latest`。CI 每日使用 `--pull --no-cache` 重新解析 npm 当前的 `@latest`，并以 `latest` 和 `ocr-<实际版本>` 发布镜像。镜像运行时设置 `OCR_NO_UPDATE=1`，因此 OpenCodeReview engine 不会在容器启动或执行审查时自行更新。
+镜像构建时执行 `npm install -g @alibaba-group/open-code-review@latest`。CI 每日使用 `--pull --no-cache` 重新解析 npm 当前的 `@latest`，校验实际版本、Juya 依赖的 CLI flags 和真实 JSON 输出契约，全部通过后才以 `latest` 和 `ocr-<实际版本>` 发布镜像。镜像运行时设置 `OCR_NO_UPDATE=1`，因此 OpenCodeReview engine 不会在容器启动或执行审查时自行更新。
 
 这个策略有意不 pin OpenCodeReview engine 版本：同一 Git commit 在不同日期构建可能解析到不同版本，所以构建不保证可复现。实际 engine 版本由镜像标签、构建日志和 GitHub Actions job summary 记录。
 
 ## 许可证
 
-本仓库使用 [Apache License 2.0](LICENSE)。Powered by OpenCodeReview；底层 npm 包及其归属、许可证和商标由 OpenCodeReview 项目维护，本仓库的产品身份为 Juya Review Bot。
+本仓库使用 [Apache License 2.0](LICENSE)，项目与上游归属见 [NOTICE](NOTICE)。Powered by OpenCodeReview；底层 npm 包及其归属、许可证和商标由 OpenCodeReview 项目维护，本仓库的产品身份为 Juya Review Bot。
