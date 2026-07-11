@@ -21,6 +21,7 @@ RUN npm ci --omit=dev \
 RUN useradd --create-home --uid 10001 appuser
 COPY src ./src
 COPY assets ./assets
+COPY LICENSE NOTICE /usr/share/licenses/juya-review-bot/
 RUN chown -R appuser:appuser /app
 
 EXPOSE 3007
