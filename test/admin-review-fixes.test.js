@@ -989,6 +989,7 @@ test('metrics repository table keeps numeric columns content-sized and right-ali
         { day: '2026-07-05', jobs: 2, successRate: 1, averageCommentsGenerated: 3, averageCommentsPosted: 2, stale: 0, skipped: 0, interrupted: 0 },
       ],
     },
+    window: 'all',
   });
   const markup = html.replace(/<script[\s\S]*?<\/script>/g, '');
   assert.match(markup, /data-i18n="th_repository">Repository</);
@@ -996,8 +997,8 @@ test('metrics repository table keeps numeric columns content-sized and right-ali
   // Compact only for narrow summary tables; wide window/daily stay full-width metrics tables.
   assert.match(markup, /class="gh-table metrics-table metrics-table--compact"[\s\S]*?data-i18n="m_fail_class"/);
   assert.match(markup, /class="gh-table metrics-table metrics-table--compact"[\s\S]*?data-i18n="th_repository"/);
-  assert.match(markup, /class="gh-table metrics-table"><thead><tr><th data-i18n="th_window"/);
-  assert.match(markup, /class="gh-table metrics-table"><thead><tr><th data-i18n="th_day"/);
+  assert.match(markup, /class="gh-table metrics-table"[\s\S]*?<thead><tr><th data-i18n="th_window"/);
+  assert.match(markup, /class="gh-table metrics-table"[\s\S]*?<thead><tr><th data-i18n="th_day"/);
   assert.equal((markup.match(/class="gh-table metrics-table metrics-table--compact"/g) || []).length, 2);
 
   const metricsCss = html.match(/\/\* Metrics[\s\S]*?\.empty-state/)?.[0] ?? '';
