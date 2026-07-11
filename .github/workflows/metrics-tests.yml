@@ -7,6 +7,7 @@ on:
       - 'src/admin/metrics-page.js'
       - 'src/admin/router.js'
       - 'test/admin-metrics.test.js'
+      - 'test/admin-dashboard-status.test.js'
       - '.github/workflows/metrics-tests.yml'
 
 permissions:
@@ -26,4 +27,4 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Run metrics tests
-        run: node --test test/admin-metrics.test.js
+        run: node --test test/admin-metrics.test.js test/admin-dashboard-status.test.js
