@@ -3,19 +3,35 @@ name: Metrics Tests
 on:
   pull_request:
     paths:
-      - 'src/admin/metrics.js'
-      - 'src/admin/metrics-page.js'
-      - 'src/admin/router.js'
-      - 'src/admin/index.js'
-      - 'test/admin-metrics.test.js'
-      - 'test/admin-dashboard-status.test.js'
+      - 'src/admin/**'
+      - 'test/**'
       - '.github/workflows/metrics-tests.yml'
 
 permissions:
   contents: read
 
 jobs:
-  metrics:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.files.outputs.files }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - id: files
+        shell: bash
+        run: |
+          files="$(node -e "const fs=require('node:fs'); const files=fs.readdirSync('test').filter(name=>name.endsWith('.test.js')).sort().map(name=>'test/'+name); process.stdout.write(JSON.stringify(files));")"
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+
+  file:
+    needs: discover
+    name: ${{ matrix.file }}
+    strategy:
+      fail-fast: false
+      matrix:
+        file: ${{ fromJSON(needs.discover.outputs.files) }}
     runs-on: ubuntu-latest
     container:
       image: node:20
@@ -27,21 +43,5 @@ jobs:
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
       - name: Install dependencies
         run: npm ci
-      - name: Run focused metrics tests
-        run: node --test test/admin-metrics.test.js test/admin-dashboard-status.test.js
-      - name: Run full suite with concise failure output
-        shell: bash
-        run: |
-          set -o pipefail
-          if npm test > /tmp/juya-tests.log 2>&1; then
-            tail -n 20 /tmp/juya-tests.log
-          else
-            awk '
-              /^not ok / { printing = 1; remaining = 45 }
-              printing { print; remaining -= 1 }
-              printing && remaining == 0 { printing = 0 }
-            ' /tmp/juya-tests.log
-            echo '--- summary ---'
-            tail -n 20 /tmp/juya-tests.log
-            exit 1
-          fi
+      - name: Run test file
+        run: node --test "${{ matrix.file }}"
