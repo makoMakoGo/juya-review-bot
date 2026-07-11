@@ -1,0 +1,10 @@
+Juya Review Bot
+Copyright 2026 makoMakoGo
+
+Juya Review Bot is licensed under the Apache License, Version 2.0.
+
+This repository was separated from the github-app-bot directory of
+makoMakoGo/open-code-review. OpenCodeReview is maintained by Alibaba Group and
+is consumed by Juya Review Bot as the external npm package
+@alibaba-group/open-code-review. No OpenCodeReview source code is vendored in
+this repository.

@@ -1,12 +1,14 @@
-# Local runtime config and state must never enter Docker builds.
+# Repository-only metadata is not part of the runtime image.
+.git
+.github
+README.md
+
+# Local runtime config, deployment files, and state never enter Docker builds.
 .env
 .env.*
 config
 data
-deploy/.env
-deploy/.env.*
-deploy/github-app-private-key.pem
-deploy/data
+deploy
 
 # Dependencies and development artifacts are not part of the runtime image.
 node_modules
