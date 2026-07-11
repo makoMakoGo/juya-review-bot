@@ -363,7 +363,6 @@ export class AdminRuntime {
     return {
       summary,
       recentJobs: jobsPage.jobs,
-      metrics: stats,
       stats,
       queue,
       serviceStatus: serviceSnapshot.status,

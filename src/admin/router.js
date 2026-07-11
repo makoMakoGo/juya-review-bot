@@ -87,14 +87,14 @@ export class AdminRouter {
 
     if (normalized.pathname === '/admin/metrics') {
       if (normalized.method !== 'GET') return methodNotAllowed(['GET']);
-      const dashboard = await this.loadDashboard({ request: normalized, session });
       let window;
       try {
         window = normalizeMetricsWindow(normalized.query.get('window'));
       } catch (error) {
         return textResponse(error.message, { status: 400 });
       }
-      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, metrics: dashboard.metrics, window }));
+      const dashboard = await this.loadDashboard({ request: normalized, session });
+      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window }));
     }
 
     if (normalized.pathname === '/admin/jobs') {

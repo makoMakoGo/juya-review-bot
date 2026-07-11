@@ -1,8 +1,8 @@
 import { buildMetricsView, METRICS_WINDOWS } from './metrics.js';
 import { escapeAttribute, escapeHtml, renderLayout } from './templates.js';
 
-export function renderMetricsPage({ csrfToken, stats = null, metrics = null, window = '', cspNonce = '' } = {}) {
-  const view = buildMetricsView(stats || metrics || {}, window);
+export function renderMetricsPage({ csrfToken, stats = {}, window = '', cspNonce = '' } = {}) {
+  const view = buildMetricsView(stats, window);
   const bucket = view.bucket;
   const overview = [
     { label: 'Jobs', key: 'th_jobs', value: numberOrDash(bucket.jobs) },
