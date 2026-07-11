@@ -61,6 +61,7 @@ test('metrics page renders latency percentiles comments failure repository and d
   const html = renderMetricsPage({
     csrfToken: 'csrf',
     stats,
+    window: 'all',
   });
 
   assert.match(html, /Duration p50/);
