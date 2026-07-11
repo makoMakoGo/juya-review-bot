@@ -25,7 +25,7 @@ import {
 } from '../src/server.js';
 
 const baseConfig = {
-  triggerPhrases: csvSet('/ocr review'),
+  triggerPhrases: csvSet('/juya review'),
   allowedUsers: csvSet('owner-login,friend-login'),
   allowedUserIDs: csvSet('123456789'),
   allowedRepoOwners: csvSet('owner-login'),
@@ -35,7 +35,7 @@ function payload(overrides = {}) {
   return {
     action: 'created',
     issue: { number: 7, pull_request: {} },
-    comment: { body: '/ocr review', id: 1 },
+    comment: { body: '/juya review', id: 1 },
     sender: { login: 'friend-login', id: 1 },
     repository: { owner: { login: 'owner-login' }, private: false },
     installation: { id: 42 },
@@ -44,14 +44,14 @@ function payload(overrides = {}) {
 }
 
 test('matches exact slash command after trimming whitespace', () => {
-  const triggers = csvSet('/ocr review');
-  assert.equal(isTrigger('  /ocr review\n', triggers), true);
+  const triggers = csvSet('/juya review');
+  assert.equal(isTrigger('  /juya review\n', triggers), true);
 });
 
 test('rejects partial and extended commands', () => {
-  const triggers = csvSet('/ocr review');
+  const triggers = csvSet('/juya review');
   assert.equal(isTrigger('/ocr', triggers), false);
-  assert.equal(isTrigger('/ocr review now', triggers), false);
+  assert.equal(isTrigger('/juya review now', triggers), false);
 });
 
 test('authorizes sender by login case-insensitively', () => {
@@ -193,7 +193,7 @@ test('detects stale review results when PR head or base changes during OCR', () 
   assert.equal(shouldDiscardStaleReview(reviewed, { head: { sha: 'old-head' }, base: { sha: 'old-base', ref: 'release' } }), true);
   assert.equal(shouldDiscardStaleReview(reviewed, { head: { sha: 'old-head' }, base: { sha: 'old-base', ref: 'main' } }), false);
   const body = buildStaleReviewComment(reviewed, { head: { sha: 'new-head' }, base: { sha: 'new-base', ref: 'release' } }, 'owner/repo#7@123');
-  assert.match(body, /PR changed while OpenCodeReview was running/);
+  assert.match(body, /PR changed while Juya Review Bot was running/);
   assert.match(body, /Reviewed head: `old-head`/);
   assert.match(body, /Current head: `new-head`/);
   assert.match(body, /Reviewed base: `main@old-base`/);
@@ -266,7 +266,7 @@ test('minimal review payload omits webhook and user-only fields', () => {
     installation: { id: 42, account: { login: 'owner-login' } },
     repository: { name: 'repo', full_name: 'owner-login/repo', private: false, owner: { login: 'owner-login' }, extra: 'drop' },
     issue: { number: 7, pull_request: { url: 'https://api.github.com/pulls/7' }, body: 'drop issue body' },
-    comment: { id: 99, body: '/ocr review', user: { login: 'owner-login' } },
+    comment: { id: 99, body: '/juya review', user: { login: 'owner-login' } },
     sender: { login: 'owner-login', id: 123, email: 'drop@example.test' },
   });
   assert.deepEqual(minimal, {
@@ -274,7 +274,7 @@ test('minimal review payload omits webhook and user-only fields', () => {
     installation: { id: 42 },
     repository: { name: 'repo', full_name: 'owner-login/repo', private: false, owner: { login: 'owner-login' } },
     issue: { number: 7, pull_request: {} },
-    comment: { id: 99, body: '/ocr review' },
+    comment: { id: 99, body: '/juya review' },
     sender: { login: 'owner-login', id: 123 },
   });
 });
@@ -308,7 +308,7 @@ test('retention runner fails open', async () => {
 
 function validEnv() {
   return {
-    BOT_TRIGGER_PHRASE: '/ocr review',
+    BOT_TRIGGER_PHRASES: '/juya review',
     ALLOWED_USERS: 'owner-login',
     ALLOWED_REPO_OWNERS: 'owner-login',
     BOT_REPO_ROOT: '/data/repos',

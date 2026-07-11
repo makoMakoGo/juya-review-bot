@@ -172,7 +172,7 @@ test('dashboard includes runtime config failure in the same snapshot and clears 
 });
 
 test('dashboard exposes a failing storage size probe in the same snapshot', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-storage-size-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-storage-size-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const readdir = fs.readdir.bind(fs);
   t.mock.method(fs, 'readdir', async (target, ...args) => {
@@ -221,7 +221,7 @@ test('dashboard performs one event replay probe and clears a recovered read fail
 
 test('storage writability recovers through the production status probe without reinitializing', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-write-probe-'));
+  const rootDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-write-probe-'));
   const adminDir = path.join(rootDir, 'admin');
   t.after(() => fs.rm(rootDir, { recursive: true, force: true }));
   let storageUnavailable = true;
@@ -259,7 +259,7 @@ test('storage writability recovers through the production status probe without r
 
 test('interrupted recovery remains pending until its event is durably replayed', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-interrupted-outbox-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-interrupted-outbox-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   let eventWritesBlocked = false;
   const store = new JobEventStore({
@@ -297,7 +297,7 @@ test('interrupted recovery remains pending until its event is durably replayed',
 });
 
 test('fixed serialized write probe bounds cleanup leaks and removes its stale file on recovery', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-write-cleanup-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-write-cleanup-'));
   const probePath = path.join(adminDir, '.writability-probe');
   const rm = fs.rm.bind(fs);
   t.after(() => rm(adminDir, { recursive: true, force: true }));
@@ -332,7 +332,7 @@ test('fixed serialized write probe bounds cleanup leaks and removes its stale fi
 
 test('terminal event backlog flushes before a later job event and restores replay state', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-terminal-outbox-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-terminal-outbox-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   let writesBlocked = false;
   let terminalFailureInjected = false;
@@ -397,7 +397,7 @@ test('terminal event backlog flushes before a later job event and restores repla
 
 test('semantic terminal event rejection becomes a persisted failed transition', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-semantic-terminal-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-semantic-terminal-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const queue = new AdminJobQueue({
@@ -415,7 +415,7 @@ test('semantic terminal event rejection becomes a persisted failed transition', 
 });
 
 test('mixed valid and invalid appendMany batch leaves file and outbox unchanged', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-batch-atomicity-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-batch-atomicity-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const jobId = '15151515-1515-4515-8515-151515151515';
@@ -434,7 +434,7 @@ test('mixed valid and invalid appendMany batch leaves file and outbox unchanged'
 });
 
 test('older invalid pending event reports newly staged additions as retained', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-batch-retained-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-batch-retained-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const olderJobId = '16161616-1616-4616-8616-161616161616';
@@ -453,7 +453,7 @@ test('older invalid pending event reports newly staged additions as retained', a
 });
 
 test('ambiguous event write reconciles stable IDs without duplicate replay effects', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-idempotent-outbox-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-idempotent-outbox-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   let failAfterWrite = false;
   const store = new JobEventStore({
@@ -491,7 +491,7 @@ test('ambiguous event write reconciles stable IDs without duplicate replay effec
 });
 
 test('same event ID with different content rejects without changing history', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-event-id-conflict-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-event-id-conflict-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const jobId = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
@@ -510,7 +510,7 @@ test('same event ID with different content rejects without changing history', as
 });
 
 test('event identity reconciliation reloads rewritten history and normalizes UUID case', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-event-identity-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-event-identity-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const jobId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
@@ -532,7 +532,7 @@ test('event identity reconciliation reloads rewritten history and normalizes UUI
 });
 
 test('event submitted before an initial store read failure remains pending for flush', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-initial-read-outbox-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-initial-read-outbox-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const eventsPath = path.join(adminDir, 'jobs', 'events.jsonl');
   const readFile = fs.readFile.bind(fs);
@@ -566,7 +566,7 @@ test('event submitted before an initial store read failure remains pending for f
 
 test('event store repair failure remains a writability diagnostic until the repair succeeds', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-event-repair-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-event-repair-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const jobId = '12121212-1212-4212-8212-121212121212';
@@ -599,7 +599,7 @@ test('event store repair failure remains a writability diagnostic until the repa
 
 test('startup retries interrupted recovery after event replay access returns', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-deferred-recovery-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-deferred-recovery-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const jobId = '13131313-1313-4313-8313-131313131313';
   const seedStore = new JobEventStore({ adminDir });
@@ -632,7 +632,7 @@ test('startup retries interrupted recovery after event replay access returns', a
 
 test('failed event compaction remains visible until compaction itself succeeds', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-compact-recovery-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-compact-recovery-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const store = new JobEventStore({ adminDir });
   const jobId = '14141414-1414-4414-8414-141414141414';
@@ -665,7 +665,7 @@ test('failed event compaction remains visible until compaction itself succeeds',
 
 test('queue log persistence diagnostic clears after the next successful append', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-queue-log-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-queue-log-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   let appendAttempts = 0;
   let firstWriteFinished;
@@ -713,7 +713,7 @@ test('queue log persistence diagnostic clears after the next successful append',
 
 test('retention persistence failure controls writability until a successful retry', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-write-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-write-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const statePath = path.join(adminDir, 'retention-state.json');
   await fs.mkdir(statePath);
@@ -1288,7 +1288,7 @@ test('service health uses deduplicated current stats, retention, and queue diagn
 
 test('dashboard health recovers after a failed stats read succeeds', async (t) => {
   t.mock.method(console, 'error', () => {});
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-stats-recovery-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-stats-recovery-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   const statsPath = path.join(adminDir, 'stats', 'daily-stats.jsonl');
   await fs.mkdir(statsPath, { recursive: true });
@@ -1307,7 +1307,7 @@ test('dashboard health recovers after a failed stats read succeeds', async (t) =
 });
 
 test('dashboard health degrades for corrupt daily stats that do not throw', async (t) => {
-  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-stats-degraded-'));
+  const adminDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-stats-degraded-'));
   t.after(() => fs.rm(adminDir, { recursive: true, force: true }));
   await fs.mkdir(path.join(adminDir, 'stats'), { recursive: true });
   await fs.writeFile(path.join(adminDir, 'stats', 'daily-stats.jsonl'), '{not-json}\n');

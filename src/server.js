@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 import { spawn } from 'node:child_process';
 import { App } from 'octokit';
 import { createAdminRouter, AdminRuntime } from './admin/index.js';
+import { ENGINE, PRODUCT } from './brand.js';
 import { ConfigManager, loadConfig as loadManagedConfig, csvSet as managedCsvSet, summarizeConfig } from './config.js';
 import { AdminJobQueue, BoundedJobLogger, JobEventStore, redactSensitiveString, sanitizeForAdminStorage } from './jobs/index.js';
 
@@ -375,7 +376,7 @@ function classifyOcrFailure(error, config) {
     const timeout = formatDurationMs(timeoutMs);
     return {
       kind: 'job_timeout',
-      title: 'OpenCodeReview did not finish before the bot timeout.',
+      title: `${PRODUCT.name} did not finish before the bot timeout.`,
       reason: `review exceeded the ${timeout} job timeout`,
       retryable: true,
       next: 'Retry after reducing PR size, raising JOB_TIMEOUT_MS, or increasing OCR_CONCURRENCY.',
@@ -386,7 +387,7 @@ function classifyOcrFailure(error, config) {
   if (lower.includes('unsupported auth_header') || lower.includes('missing required environment variable') || lower.includes('ocr environment') || lower.includes('resolve llm endpoint')) {
     return {
       kind: 'ocr_config_error',
-      title: 'OpenCodeReview could not start because the LLM configuration is invalid.',
+      title: `${PRODUCT.name} could not start because the LLM configuration is invalid.`,
       reason: 'bot service configuration is invalid',
       retryable: false,
       next: 'A bot operator needs to fix the service configuration before retrying.',
@@ -397,7 +398,7 @@ function classifyOcrFailure(error, config) {
   if (/\b429\b/.test(lower) || lower.includes('rate limit') || lower.includes('rate-limit') || lower.includes('too many requests') || lower.includes('concurrency limit')) {
     return {
       kind: 'provider_rate_limited',
-      title: 'OpenCodeReview was rate-limited by the LLM provider.',
+      title: `${PRODUCT.name} was rate-limited by the LLM provider.`,
       reason: 'provider rate or concurrency limit was reached',
       retryable: true,
       next: 'Retry later, or ask a bot operator to lower OCR_CONCURRENCY or raise the provider quota.',
@@ -408,7 +409,7 @@ function classifyOcrFailure(error, config) {
   if (/\b(401|403)\b/.test(lower) || lower.includes('unauthorized') || lower.includes('forbidden') || lower.includes('invalid api key') || lower.includes('invalid_api_key')) {
     return {
       kind: 'provider_auth_failed',
-      title: 'OpenCodeReview could not authenticate with the LLM provider.',
+      title: `${PRODUCT.name} could not authenticate with the LLM provider.`,
       reason: 'provider authentication failed',
       retryable: false,
       next: 'A bot operator needs to refresh or correct the provider token before retrying.',
@@ -419,7 +420,7 @@ function classifyOcrFailure(error, config) {
   if (/\b5\d\d\b/.test(lower) || lower.includes('econnreset') || lower.includes('etimedout') || lower.includes('enotfound') || lower.includes('fetch failed') || lower.includes('socket hang up')) {
     return {
       kind: 'provider_unavailable',
-      title: 'OpenCodeReview failed because the LLM provider was unavailable.',
+      title: `${PRODUCT.name} failed because the LLM provider was unavailable.`,
       reason: 'provider service or network request failed',
       retryable: true,
       next: 'Retry later. If this keeps happening, a bot operator should inspect provider connectivity.',
@@ -429,7 +430,7 @@ function classifyOcrFailure(error, config) {
 
   return {
     kind: 'ocr_runtime_error',
-    title: 'OpenCodeReview failed while running OCR.',
+    title: `${PRODUCT.name} failed while running the ${ENGINE.name} engine.`,
     reason: 'unclassified OCR runtime error',
     retryable: false,
     next: 'A bot operator should inspect the logs with the diagnostic id below.',
@@ -443,7 +444,7 @@ function classifyReviewFailure(error, config) {
     const timeout = error.timedOut && Number.isSafeInteger(error.timeoutMs) ? formatDurationMs(error.timeoutMs) : null;
     return {
       kind: 'git_error',
-      title: 'OpenCodeReview could not prepare the pull request checkout.',
+      title: `${PRODUCT.name} could not prepare the pull request checkout.`,
       reason: timeout ? `git ${error.command || 'command'} exceeded the ${timeout} timeout` : 'git command failed',
       retryable: true,
       next: 'Retry later. If this keeps happening, a bot operator should inspect repository access and network connectivity.',
@@ -458,7 +459,7 @@ function classifyReviewFailure(error, config) {
     const rateLimited = status === 429 || (status === 403 && (String(headers['x-ratelimit-remaining']) === '0' || headers['retry-after'] != null || message.includes('rate limit')));
     return {
       kind: rateLimited ? 'github_rate_limited' : 'github_api_error',
-      title: rateLimited ? 'OpenCodeReview was rate-limited by GitHub.' : 'OpenCodeReview could not complete a GitHub API request.',
+      title: rateLimited ? `${PRODUCT.name} was rate-limited by GitHub.` : `${PRODUCT.name} could not complete a GitHub API request.`,
       reason: rateLimited ? `GitHub API rate limit returned ${status}` : `GitHub API returned ${status}`,
       retryable: rateLimited || status >= 500,
       next: rateLimited ? 'Retry after GitHub rate limits reset.' : 'Retry later. If this keeps happening, a bot operator should inspect the GitHub App installation and permissions.',
@@ -468,7 +469,7 @@ function classifyReviewFailure(error, config) {
 
   return {
     kind: 'bot_runtime_error',
-    title: 'OpenCodeReview failed before posting review comments.',
+    title: `${PRODUCT.name} failed before posting review comments.`,
     reason: 'unclassified bot runtime error',
     retryable: false,
     next: 'A bot operator should inspect the logs with the diagnostic id below.',
@@ -479,7 +480,7 @@ function classifyReviewFailure(error, config) {
 function buildInvalidOcrOutputFailure(stdout) {
   return {
     kind: 'invalid_ocr_output',
-    title: 'OpenCodeReview completed but returned invalid output.',
+    title: `${PRODUCT.name} completed but returned invalid OCR output.`,
     reason: 'OCR output did not match the expected JSON schema',
     retryable: false,
     next: 'A bot operator should inspect the logs with the diagnostic id below.',
@@ -506,7 +507,7 @@ function buildOcrStatusSummary(result, diagnosticId) {
   if (!isError && !isWarning) return '';
   const warnings = Array.isArray(result.warnings) ? result.warnings.length : 0;
   return [
-    isError ? 'OpenCodeReview completed with errors; some files may not have been reviewed.' : 'OpenCodeReview completed with warnings.',
+    isError ? `${PRODUCT.name} completed with errors; some files may not have been reviewed.` : `${PRODUCT.name} completed with warnings.`,
     '',
     `- Warnings: ${warnings}`,
     `- Diagnostic id: \`${diagnosticId}\``,
@@ -532,7 +533,7 @@ function shouldDiscardStaleReview(reviewed, currentPull) {
 
 function buildStaleReviewComment(reviewed, currentPull, diagnosticId) {
   return [
-    'PR changed while OpenCodeReview was running; stale review results were discarded.',
+    `PR changed while ${PRODUCT.name} was running; stale review results were discarded.`,
     '',
     `- Reviewed head: \`${reviewed.headSha}\``,
     `- Current head: \`${currentPull.head.sha}\``,
@@ -690,7 +691,7 @@ async function handleReviewJob(payload, config, context = {}) {
     ];
     await logger.phase('ocr', 'Running OCR review', { ...commonFields, base: baseSha, head: headSha, concurrency: config.ocrConcurrency, maxGitProcs: config.ocrMaxGitProcs, perFileTimeoutMinutes: config.ocrPerFileTimeoutMinutes });
     console.log('ocr started', redact({ ...commonFields, base: baseSha, head: headSha, concurrency: config.ocrConcurrency, maxGitProcs: config.ocrMaxGitProcs, perFileTimeoutMinutes: config.ocrPerFileTimeoutMinutes }));
-    const review = await runProcess('ocr', ocrArgs, {
+    const review = await runProcess(ENGINE.command, ocrArgs, {
       phase: 'ocr',
       cwd: workdir,
       env: ocrEnv,
@@ -753,7 +754,7 @@ async function handleReviewJob(payload, config, context = {}) {
         owner,
         repo,
         issue_number: pullNumber,
-        body: statusSummary || `OpenCodeReview: ${result.message || 'No comments generated. Looks good to me.'}`,
+        body: statusSummary || `${PRODUCT.name}: ${result.message || 'No comments generated. Looks good to me.'}`,
       });
       finalResult = {
         outcome: statusSummary ? 'succeeded_with_warnings' : 'succeeded',
@@ -775,7 +776,7 @@ async function handleReviewJob(payload, config, context = {}) {
 
     const summaryLines = [];
     if (statusSummary) summaryLines.push(statusSummary);
-    summaryLines.push(`OpenCodeReview found ${comments.length} issue(s).`);
+    summaryLines.push(`${PRODUCT.name} found ${comments.length} issue(s).`);
     if (overflow > 0) summaryLines.push(`${overflow} additional issue(s) omitted by MAX_REVIEW_COMMENTS.`);
     if (summary.length > 0) summaryLines.push(`${summary.length} issue(s) could not be attached inline and are summarized below.`);
     let summaryBody = summaryLines.join('\n');
@@ -806,7 +807,7 @@ async function handleReviewJob(payload, config, context = {}) {
             pull_number: pullNumber,
             commit_id: headSha,
             event: 'COMMENT',
-            body: 'OpenCodeReview inline comment.',
+            body: `${PRODUCT.name} inline comment.`,
             comments: [reviewComment],
           });
           commentsPosted += 1;
@@ -915,7 +916,7 @@ function createServer(config, options = {}) {
         return;
       }
       if (req.method === 'GET' && req.url === '/health') {
-        json(res, 200, { ok: true, service: 'open-code-review-github-app-bot' });
+        json(res, 200, { ok: true, service: PRODUCT.id });
         return;
       }
       if (req.method === 'POST' && req.url === '/llm/anthropic/v1/messages') {
@@ -1129,7 +1130,7 @@ async function main() {
       console.error('pending restart clear failed', redactSensitiveString(error.stack || error.message));
     }
     void runRetentionFailOpen(server.adminRuntime);
-    console.log(`open-code-review-github-app-bot listening on ${runningPort}`);
+    console.log(`${PRODUCT.id} listening on ${runningPort}`);
   });
 }
 

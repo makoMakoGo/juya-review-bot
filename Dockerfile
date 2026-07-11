@@ -1,5 +1,7 @@
 FROM node:20-bookworm-slim
-LABEL org.opencontainers.image.source="https://github.com/makoMakoGo/open-code-review"
+LABEL org.opencontainers.image.title="Juya Review Bot" \
+      org.opencontainers.image.description="Self-hosted GitHub App review bot powered by OpenCodeReview" \
+      org.opencontainers.image.source="https://github.com/makoMakoGo/juya-review-bot"
 
 ENV NODE_ENV=production \
     OCR_NO_UPDATE=1

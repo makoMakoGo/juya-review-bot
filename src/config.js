@@ -2,12 +2,12 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
+import { ENGINE, PRODUCT } from './brand.js';
 
 const DEFAULT_WEBHOOK_BODY_LIMIT_BYTES = 1024 * 1024;
 const DEFAULT_BOT_VERSION = '0.1.0';
 const DEFAULT_LLM_PROXY_BODY_LIMIT_BYTES = 64 * 1024 * 1024;
 const DEFAULT_ADMIN_DATA_DIR = '/data/admin';
-const DEFAULT_ADMIN_STORAGE_DIR = DEFAULT_ADMIN_DATA_DIR;
 const DEFAULT_JOB_HISTORY_RETENTION_DAYS = 90;
 const DEFAULT_JOB_LOG_RETENTION_DAYS = 14;
 const DEFAULT_STATS_RETENTION_DAYS = 365;
@@ -40,7 +40,7 @@ const DEFAULT_ENV = Object.freeze({
   OCR_MAX_GIT_PROCS: '2',
   OCR_PER_FILE_TIMEOUT_MINUTES: '10',
   LLM_PROXY_TARGET_URL: '',
-  LLM_PROXY_USER_AGENT: 'open-code-review-github-app-bot/0.1.0',
+  LLM_PROXY_USER_AGENT: `${PRODUCT.id}/${DEFAULT_BOT_VERSION}`,
   LLM_PROXY_X_APP: '',
   LLM_PROXY_INTERNAL_TOKEN: '',
   LLM_PROXY_UPSTREAM_AUTH_HEADER: '',
@@ -56,7 +56,6 @@ const DEFAULT_ENV = Object.freeze({
   RETENTION_INTERVAL_HOURS: String(DEFAULT_RETENTION_INTERVAL_HOURS),
   ADMIN_SESSION_TTL_HOURS: String(DEFAULT_ADMIN_SESSION_TTL_HOURS),
   ADMIN_PASSWORD: '',
-  ADMIN_STORAGE_DIR: DEFAULT_ADMIN_STORAGE_DIR,
   ADMIN_DATA_DIR: DEFAULT_ADMIN_DATA_DIR,
   ADMIN_ALLOWED_HOSTS: '',
   ADMIN_COOKIE_SECURE: '',
@@ -64,7 +63,7 @@ const DEFAULT_ENV = Object.freeze({
 });
 
 const REQUIRED_ENV_KEYS = Object.freeze([
-  'BOT_TRIGGER_PHRASE',
+  'BOT_TRIGGER_PHRASES',
   'ALLOWED_USERS',
   'ALLOWED_REPO_OWNERS',
   'BOT_REPO_ROOT',
@@ -78,7 +77,6 @@ const REQUIRED_ENV_KEYS = Object.freeze([
 const OPTIONAL_ENV_KEYS = Object.freeze([
   'BOT_VERSION',
   'PORT',
-  'BOT_TRIGGER_PHRASES',
   'ALLOWED_USER_IDS',
   'GITHUB_APP_PRIVATE_KEY_PATH',
   'MAX_REVIEW_COMMENTS',
@@ -107,7 +105,6 @@ const OPTIONAL_ENV_KEYS = Object.freeze([
   'ADMIN_SESSION_TTL_HOURS',
   'ADMIN_PASSWORD',
   'ADMIN_DATA_DIR',
-  'ADMIN_STORAGE_DIR',
   'ADMIN_ALLOWED_HOSTS',
   'ADMIN_COOKIE_SECURE',
   'ADMIN_TRUST_PROXY',
@@ -115,7 +112,7 @@ const OPTIONAL_ENV_KEYS = Object.freeze([
 
 const CONFIG_ENV_KEYS = Object.freeze([...REQUIRED_ENV_KEYS, ...OPTIONAL_ENV_KEYS]);
 const CONFIG_ENV_KEY_SET = new Set(CONFIG_ENV_KEYS);
-const NON_EDITABLE_ENV_KEYS = new Set(['ADMIN_PASSWORD', 'ADMIN_DATA_DIR', 'ADMIN_STORAGE_DIR']);
+const NON_EDITABLE_ENV_KEYS = new Set(['ADMIN_PASSWORD', 'ADMIN_DATA_DIR']);
 
 const SECRET_ENV_KEYS = Object.freeze([
   'GITHUB_WEBHOOK_SECRET',
@@ -144,8 +141,7 @@ const NON_SECRET_SUMMARY_FIELDS = Object.freeze([
   { name: 'port', envKey: 'PORT', read: config => config.port },
   { name: 'appId', envKey: 'GITHUB_APP_ID', read: config => config.appId },
   { name: 'privateKeyPath', envKey: 'GITHUB_APP_PRIVATE_KEY_PATH', read: config => config.privateKeyPath },
-  { name: 'triggerPhrase', envKey: 'BOT_TRIGGER_PHRASE', read: config => config.triggerPhrase },
-  { name: 'triggerPhrases', envKey: 'BOT_TRIGGER_PHRASES', fallbackEnvKey: 'BOT_TRIGGER_PHRASE', read: config => config.triggerPhrases },
+  { name: 'triggerPhrases', envKey: 'BOT_TRIGGER_PHRASES', read: config => config.triggerPhrases },
   { name: 'allowedUsers', envKey: 'ALLOWED_USERS', read: config => config.allowedUsers },
   { name: 'allowedUserIDs', envKey: 'ALLOWED_USER_IDS', read: config => config.allowedUserIDs },
   { name: 'allowedRepoOwners', envKey: 'ALLOWED_REPO_OWNERS', read: config => config.allowedRepoOwners },
@@ -177,8 +173,7 @@ const NON_SECRET_SUMMARY_FIELDS = Object.freeze([
   { name: 'adminCookieSecure', envKey: 'ADMIN_COOKIE_SECURE', read: config => config.adminCookieSecure },
   { name: 'adminEnabled', envKey: 'ADMIN_PASSWORD', read: config => config.adminEnabled },
   { name: 'adminDisabledReason', envKey: 'ADMIN_PASSWORD', read: config => config.adminDisabledReason },
-  { name: 'adminDataDir', envKey: 'ADMIN_DATA_DIR', fallbackEnvKey: 'ADMIN_STORAGE_DIR', read: config => config.adminDataDir },
-  { name: 'adminStorageDir', envKey: 'ADMIN_STORAGE_DIR', fallbackEnvKey: 'ADMIN_DATA_DIR', read: config => config.adminStorageDir },
+  { name: 'adminDataDir', envKey: 'ADMIN_DATA_DIR', read: config => config.adminDataDir },
   { name: 'adminTrustProxy', envKey: 'ADMIN_TRUST_PROXY', read: config => config.adminTrustProxy },
   { name: 'adminAllowedHosts', envKey: 'ADMIN_ALLOWED_HOSTS', read: config => config.adminAllowedHosts },
 ]);
@@ -193,7 +188,6 @@ const SECRET_SUMMARY_FIELDS = Object.freeze([
 
 const CONFIG_FIELD_METADATA = Object.freeze({
   PORT: { label: 'HTTP port', description: 'Port the bot binds. Changing it requires a restart.' },
-  BOT_TRIGGER_PHRASE: { label: 'Legacy trigger phrase', description: 'Single legacy slash command used when BOT_TRIGGER_PHRASES is unset.' },
   BOT_TRIGGER_PHRASES: { label: 'Trigger phrases', description: 'Comma-separated slash commands that enqueue reviews.' },
   ALLOWED_USERS: { label: 'Allowed user logins', description: 'Comma-separated GitHub logins allowed to trigger reviews.' },
   ALLOWED_USER_IDS: { label: 'Allowed user IDs', description: 'Comma-separated numeric GitHub user IDs allowed to trigger reviews.' },
@@ -202,25 +196,25 @@ const CONFIG_FIELD_METADATA = Object.freeze({
   GITHUB_APP_ID: { label: 'GitHub App ID', description: 'Numeric GitHub App identifier used for API authentication.' },
   GITHUB_APP_PRIVATE_KEY_PATH: { label: 'Private key path', description: 'Read-only container path to the GitHub App private key file.' },
   GITHUB_WEBHOOK_SECRET: { label: 'Webhook secret', description: 'Secret used to verify GitHub webhook signatures.' },
-  OCR_LLM_URL: { label: 'OCR LLM URL', description: 'Provider URL passed to the OpenCodeReview CLI.' },
-  OCR_LLM_TOKEN: { label: 'OCR LLM token', description: 'Provider token passed to the OpenCodeReview CLI.' },
-  OCR_LLM_MODEL: { label: 'OCR LLM model', description: 'Provider model name passed to the OpenCodeReview CLI.' },
+  OCR_LLM_URL: { label: 'OCR LLM URL', description: `Provider URL passed to the ${ENGINE.name} engine.` },
+  OCR_LLM_TOKEN: { label: 'OCR LLM token', description: `Provider token passed to the ${ENGINE.name} engine.` },
+  OCR_LLM_MODEL: { label: 'OCR LLM model', description: `Provider model name passed to the ${ENGINE.name} engine.` },
   MAX_REVIEW_COMMENTS: { label: 'Maximum review comments', description: 'Maximum inline review comments to post for one job.' },
   JOB_TIMEOUT_MS: { label: 'Job timeout (ms)', description: 'Maximum runtime for one review job in milliseconds.' },
   CLEANUP_WORKDIR: { label: 'Cleanup workdirs', description: 'Whether temporary review workdirs are removed after each job.' },
   WEBHOOK_BODY_LIMIT_BYTES: { label: 'Webhook body limit', description: 'Maximum accepted GitHub webhook body size in bytes.' },
   LLM_PROXY_BODY_LIMIT_BYTES: { label: 'LLM proxy body limit', description: 'Maximum accepted internal LLM proxy body size in bytes.' },
-  OCR_CONCURRENCY: { label: 'OCR concurrency', description: 'OpenCodeReview concurrency for file analysis.' },
-  OCR_MAX_GIT_PROCS: { label: 'OCR git processes', description: 'Maximum concurrent git subprocesses used by OpenCodeReview.' },
-  OCR_PER_FILE_TIMEOUT_MINUTES: { label: 'OCR per-file timeout', description: 'Per-file OpenCodeReview timeout in minutes.' },
+  OCR_CONCURRENCY: { label: 'OCR concurrency', description: `${ENGINE.name} engine concurrency for file analysis.` },
+  OCR_MAX_GIT_PROCS: { label: 'OCR git processes', description: `Maximum concurrent git subprocesses used by the ${ENGINE.name} engine.` },
+  OCR_PER_FILE_TIMEOUT_MINUTES: { label: 'OCR per-file timeout', description: `Per-file ${ENGINE.name} engine timeout in minutes.` },
   LLM_PROXY_TARGET_URL: { label: 'LLM proxy target URL', description: 'Upstream provider URL for the internal LLM proxy.' },
   LLM_PROXY_USER_AGENT: { label: 'LLM proxy user agent', description: 'User-Agent sent from the internal LLM proxy to the provider.' },
   LLM_PROXY_X_APP: { label: 'LLM proxy X-App', description: 'Optional x-app header sent to the upstream provider.' },
   LLM_PROXY_INTERNAL_TOKEN: { label: 'LLM proxy internal token', description: 'Internal token required to call the embedded LLM proxy.' },
   LLM_PROXY_UPSTREAM_AUTH_HEADER: { label: 'LLM proxy auth header', description: 'Header name used for upstream provider authentication.' },
   LLM_PROXY_UPSTREAM_TOKEN: { label: 'LLM proxy upstream token', description: 'Secret value sent in the configured upstream auth header.' },
-  OCR_USE_ANTHROPIC: { label: 'Use Anthropic mode', description: 'OpenCodeReview provider compatibility flag.' },
-  OCR_LLM_AUTH_HEADER: { label: 'OCR auth header', description: 'OpenCodeReview provider auth header setting.' },
+  OCR_USE_ANTHROPIC: { label: 'Use Anthropic mode', description: `${ENGINE.name} engine provider compatibility flag.` },
+  OCR_LLM_AUTH_HEADER: { label: 'OCR auth header', description: `${ENGINE.name} engine provider auth header setting.` },
   JOB_HISTORY_RETENTION_DAYS: { label: 'Job history retention', description: 'Days to retain terminal job history.' },
   JOB_LOG_RETENTION_DAYS: { label: 'Job log retention', description: 'Days to retain per-job admin logs.' },
   STATS_RETENTION_DAYS: { label: 'Stats retention', description: 'Days to retain aggregated admin stats.' },
@@ -230,8 +224,7 @@ const CONFIG_FIELD_METADATA = Object.freeze({
   RETENTION_INTERVAL_HOURS: { label: 'Retention interval', description: 'Hours between retention cleanup runs.' },
   ADMIN_SESSION_TTL_HOURS: { label: 'Admin session TTL', description: 'Absolute admin session lifetime in hours.' },
   ADMIN_PASSWORD: { label: 'Admin password', description: 'Non-editable password that enables the admin dashboard when at least 16 characters.' },
-  ADMIN_DATA_DIR: { label: 'Admin data dir', description: 'Non-editable runtime data root for admin state. ADMIN_STORAGE_DIR is accepted only as a legacy alias.' },
-  ADMIN_STORAGE_DIR: { label: 'Admin storage dir', description: 'Legacy non-editable alias for the admin data root.' },
+  ADMIN_DATA_DIR: { label: 'Admin data dir', description: 'Non-editable runtime data root for admin state.' },
   ADMIN_ALLOWED_HOSTS: { label: 'Admin allowed hosts', description: 'Comma-separated Host headers allowed to reach /admin.' },
   ADMIN_COOKIE_SECURE: { label: 'Secure admin cookies', description: 'Whether admin cookies include the Secure attribute.' },
   ADMIN_TRUST_PROXY: { label: 'Trust reverse proxy headers', description: 'Whether /admin trusts x-real-ip and x-forwarded-proto from the fronting proxy.' },
@@ -256,7 +249,6 @@ const CONFIG_FIELD_GROUP_BY_ENV = Object.freeze({
   CLEANUP_WORKDIR: 'service',
   WEBHOOK_BODY_LIMIT_BYTES: 'service',
   BOT_TRIGGER_PHRASES: 'access',
-  BOT_TRIGGER_PHRASE: 'access',
   ALLOWED_USERS: 'access',
   ALLOWED_USER_IDS: 'access',
   ALLOWED_REPO_OWNERS: 'access',
@@ -284,7 +276,6 @@ const CONFIG_FIELD_GROUP_BY_ENV = Object.freeze({
   ADMIN_COOKIE_SECURE: 'admin',
   ADMIN_SESSION_TTL_HOURS: 'admin',
   ADMIN_DATA_DIR: 'admin',
-  ADMIN_STORAGE_DIR: 'admin',
   ADMIN_DATA_MAX_BYTES: 'admin',
   JOB_HISTORY_RETENTION_DAYS: 'retention',
   JOB_LOG_RETENTION_DAYS: 'retention',
@@ -295,15 +286,15 @@ const CONFIG_FIELD_GROUP_BY_ENV = Object.freeze({
 });
 const CONFIG_FIELD_ORDER_BY_ENV = Object.freeze(Object.fromEntries([
   'PORT', 'BOT_VERSION', 'BOT_REPO_ROOT', 'JOB_TIMEOUT_MS', 'MAX_REVIEW_COMMENTS', 'CLEANUP_WORKDIR', 'WEBHOOK_BODY_LIMIT_BYTES',
-  'BOT_TRIGGER_PHRASES', 'BOT_TRIGGER_PHRASE', 'ALLOWED_USERS', 'ALLOWED_USER_IDS', 'ALLOWED_REPO_OWNERS',
+  'BOT_TRIGGER_PHRASES', 'ALLOWED_USERS', 'ALLOWED_USER_IDS', 'ALLOWED_REPO_OWNERS',
   'GITHUB_APP_ID', 'GITHUB_APP_PRIVATE_KEY_PATH', 'GITHUB_WEBHOOK_SECRET',
   'OCR_LLM_URL', 'OCR_LLM_TOKEN', 'OCR_LLM_MODEL', 'OCR_USE_ANTHROPIC', 'OCR_LLM_AUTH_HEADER', 'OCR_CONCURRENCY', 'OCR_MAX_GIT_PROCS', 'OCR_PER_FILE_TIMEOUT_MINUTES',
   'LLM_PROXY_TARGET_URL', 'LLM_PROXY_INTERNAL_TOKEN', 'LLM_PROXY_UPSTREAM_AUTH_HEADER', 'LLM_PROXY_UPSTREAM_TOKEN', 'LLM_PROXY_USER_AGENT', 'LLM_PROXY_X_APP', 'LLM_PROXY_BODY_LIMIT_BYTES',
-  'ADMIN_PASSWORD', 'ADMIN_ALLOWED_HOSTS', 'ADMIN_TRUST_PROXY', 'ADMIN_COOKIE_SECURE', 'ADMIN_SESSION_TTL_HOURS', 'ADMIN_DATA_DIR', 'ADMIN_STORAGE_DIR', 'ADMIN_DATA_MAX_BYTES',
+  'ADMIN_PASSWORD', 'ADMIN_ALLOWED_HOSTS', 'ADMIN_TRUST_PROXY', 'ADMIN_COOKIE_SECURE', 'ADMIN_SESSION_TTL_HOURS', 'ADMIN_DATA_DIR', 'ADMIN_DATA_MAX_BYTES',
   'JOB_HISTORY_RETENTION_DAYS', 'JOB_LOG_RETENTION_DAYS', 'STATS_RETENTION_DAYS', 'CONFIG_AUDIT_RETENTION_DAYS', 'JOB_LOG_MAX_BYTES', 'RETENTION_INTERVAL_HOURS',
 ].map((envKey, index) => [envKey, index])));
 
-const CONFIG_EDITOR_EXCLUDED_FIELD_NAMES = new Set(['adminEnabled', 'adminDisabledReason', 'adminStorageDir']);
+const CONFIG_EDITOR_EXCLUDED_FIELD_NAMES = new Set(['adminEnabled', 'adminDisabledReason']);
 
 function hasOwn(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
@@ -393,8 +384,7 @@ function mergeConfigLayers(env = process.env, rawOverrides = {}) {
 
 function loadConfig(env = process.env, rawOverrides) {
   const effectiveEnv = rawOverrides == null ? env : mergeConfigLayers(env, rawOverrides).env;
-  const triggerPhrase = requiredEnv('BOT_TRIGGER_PHRASE', effectiveEnv);
-  const triggerPhrases = csvSet(optionalEnv('BOT_TRIGGER_PHRASES', triggerPhrase, effectiveEnv));
+  const triggerPhrases = csvSet(requiredEnv('BOT_TRIGGER_PHRASES', effectiveEnv));
   const allowedUsers = csvSet(requiredEnv('ALLOWED_USERS', effectiveEnv));
   const allowedUserIDs = csvSet(optionalEnv('ALLOWED_USER_IDS', '', effectiveEnv));
   const allowedRepoOwners = csvSet(requiredEnv('ALLOWED_REPO_OWNERS', effectiveEnv));
@@ -429,7 +419,6 @@ function loadConfig(env = process.env, rawOverrides) {
     appId: requiredEnv('GITHUB_APP_ID', effectiveEnv),
     privateKeyPath: optionalEnv('GITHUB_APP_PRIVATE_KEY_PATH', '/config/github-app-private-key.pem', effectiveEnv),
     webhookSecret: requiredEnv('GITHUB_WEBHOOK_SECRET', effectiveEnv),
-    triggerPhrase,
     triggerPhrases,
     allowedUsers,
     allowedUserIDs,
@@ -444,7 +433,7 @@ function loadConfig(env = process.env, rawOverrides) {
     ocrMaxGitProcs: parseIntegerEnv('OCR_MAX_GIT_PROCS', 2, { min: 1, env: effectiveEnv }),
     ocrPerFileTimeoutMinutes: parseIntegerEnv('OCR_PER_FILE_TIMEOUT_MINUTES', 10, { min: 1, env: effectiveEnv }),
     llmProxyTargetURL,
-    llmProxyUserAgent: optionalEnv('LLM_PROXY_USER_AGENT', 'open-code-review-github-app-bot/0.1.0', effectiveEnv),
+    llmProxyUserAgent: optionalEnv('LLM_PROXY_USER_AGENT', `${PRODUCT.id}/${DEFAULT_BOT_VERSION}`, effectiveEnv),
     llmProxyXApp: optionalEnv('LLM_PROXY_X_APP', '', effectiveEnv),
     llmProxyInternalToken,
     llmProxyUpstreamAuthHeader,
@@ -464,7 +453,6 @@ function loadConfig(env = process.env, rawOverrides) {
     adminDisabledReason: adminPasswordStatus.disabledReason,
     adminPassword,
     adminDataDir,
-    adminStorageDir: adminDataDir,
     adminAllowedHosts,
     adminTrustProxy,
     admin: {
@@ -472,7 +460,6 @@ function loadConfig(env = process.env, rawOverrides) {
       disabledReason: adminPasswordStatus.disabledReason,
       password: adminPassword,
       dataDir: adminDataDir,
-      storageDir: adminDataDir,
       allowedHosts: adminAllowedHosts,
       trustProxy: adminTrustProxy,
       cookieSecure: adminCookieSecure,
@@ -493,7 +480,7 @@ function buildOcrEnv(env = process.env) {
 }
 
 function resolveAdminDataDir(env = process.env) {
-  return optionalEnv('ADMIN_DATA_DIR', optionalEnv('ADMIN_STORAGE_DIR', DEFAULT_ADMIN_DATA_DIR, env), env);
+  return optionalEnv('ADMIN_DATA_DIR', DEFAULT_ADMIN_DATA_DIR, env);
 }
 
 function getAdminPasswordStatus(adminPassword) {
@@ -639,8 +626,6 @@ function summarizeConfig(config, sourceMetadata = {}, { revision = null, pending
 
 function sourceForField(field, sourceMetadata) {
   const direct = sourceMetadata[field.envKey]?.source;
-  if (direct && direct !== SOURCE_MISSING) return direct;
-  if (field.fallbackEnvKey) return sourceMetadata[field.fallbackEnvKey]?.source || SOURCE_MISSING;
   return direct || SOURCE_MISSING;
 }
 
@@ -1124,10 +1109,9 @@ async function fileSize(filePath) {
 }
 
 class ConfigManager {
-  constructor({ env = process.env, dataDir, storageDir, overrideFile, pendingRestartFile, auditFile } = {}) {
+  constructor({ env = process.env, dataDir, overrideFile, pendingRestartFile, auditFile } = {}) {
     this.env = env;
-    this.dataDir = dataDir || storageDir || resolveAdminDataDir(env);
-    this.storageDir = this.dataDir;
+    this.dataDir = dataDir || resolveAdminDataDir(env);
     this.overrideFile = overrideFile || path.join(this.dataDir, OVERRIDES_FILE_NAME);
     this.pendingRestartFile = pendingRestartFile || path.join(this.dataDir, PENDING_RESTART_FILE_NAME);
     this.auditFile = auditFile || path.join(this.dataDir, CONFIG_AUDIT_DIR_NAME, CONFIG_AUDIT_FILE_NAME);
@@ -1441,7 +1425,6 @@ export {
   CONFIG_ENV_KEYS,
   OPTIONAL_ENV_KEYS,
   DEFAULT_ADMIN_DATA_DIR,
-  DEFAULT_ADMIN_STORAGE_DIR,
   DEFAULT_ENV,
   OVERRIDES_FILE_NAME,
   PENDING_RESTART_FILE_NAME,

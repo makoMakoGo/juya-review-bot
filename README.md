@@ -1,50 +1,43 @@
-# GitHub App bot
+# Juya Review Bot
 
-English | [简体中文](README.zh-CN.md)
+Juya Review Bot 是一个自托管的 GitHub App 服务。它接收 Pull Request 评论 webhook，校验请求与权限，调用 OpenCodeReview engine 完成代码审查，再通过 GitHub API 发布汇总和行内评论。默认触发命令是 `/juya review`。
 
-Self-hosted GitHub App service that wraps the `ocr` CLI and posts pull request review comments.
+## 架构边界
 
-Flow:
-
-1. A user comments the configured command on a pull request, for example `/ocr review`.
-2. GitHub sends an `issue_comment.created` webhook.
-3. The bot verifies `X-Hub-Signature-256`.
-4. The bot checks sender and repository owner allowlists.
-5. The bot fetches the PR head into a temporary worktree.
-6. The bot runs `ocr review --from <base_sha> --to <head_sha> --format json`.
-7. The bot posts OCR comments through GitHub's pull request review API.
-8. The temporary worktree is deleted when the job finishes.
-
-The bot is intentionally boring: one process, one in-memory queue, one review job at a time. OCR file-level concurrency is configurable and defaults to `1`, which is safer for low-concurrency LLM providers.
-
-## Files
+本仓库只维护 GitHub App bot、Juya Console、部署清单和镜像构建：
 
 ```text
-github-app-bot/
-  Dockerfile
-  package.json
-  package-lock.json
-  src/server.js
-  deploy/docker-compose.yml
-  deploy/.env.example
-  test/trigger.test.js
-  README.md
-  README.zh-CN.md
+GitHub issue_comment webhook
+              |
+              v
+       Juya Review Bot
+       |      |      |
+       |      |      +-- Juya Console /admin/
+       |      +--------- GitHub API comments
+       +---------------- ocr command
+                              |
+                              v
+                    OpenCodeReview engine
 ```
 
-Runtime-only files are not committed:
+OpenCodeReview engine 来自 npm 包 `@alibaba-group/open-code-review`，不会复制、vendor、submodule 或在本仓库编译其源码。产品身份、GitHub 评论、服务名称和后台名称均属于 Juya；`OCR_*` 变量和 `ocr` 命令只表示底层 engine。
 
-```text
-deploy/.env
-deploy/github-app-private-key.pem
-deploy/data/
-```
+## Webhook 流程
 
-## GitHub App setup
+1. 用户在 Pull Request 下评论 `/juya review`。
+2. GitHub 发送 `issue_comment.created` 到 `POST /github/webhook`。
+3. 服务使用 `GITHUB_WEBHOOK_SECRET` 校验 `X-Hub-Signature-256`。
+4. 服务检查用户、用户 ID、仓库所有者和公开仓库限制。
+5. 任务进入单进程队列，并在临时工作目录准备 PR 的 base/head。
+6. 服务执行 `ocr review --from <base_sha> --to <head_sha> --format json`。
+7. Juya Review Bot 发布汇总与可定位的行内评论。
+8. 任务结束后清理临时工作目录，并将受限的管理数据写入 `ADMIN_DATA_DIR`。
 
-Create a GitHub App under a user or organization account.
+触发短语按 trim 后的小写文本精确匹配；不接受命令前缀或附加参数。可用逗号配置多个短语，但默认只使用 `/juya review`。
 
-Permissions:
+## GitHub App
+
+创建 GitHub App，并配置以下权限：
 
 ```text
 Metadata: Read-only
@@ -53,101 +46,106 @@ Issues: Read and write
 Pull requests: Read and write
 ```
 
-Webhook:
+Webhook URL 使用 `https://<your-domain>/github/webhook`，启用 `Issue comment` 事件，并只把 App 安装到允许 Juya 审查的仓库或账号。
 
-```text
-Active: yes
-Webhook URL: https://<your-domain>/github/webhook
-Webhook secret: random long string
-Events: Issue comment
-```
+## 环境变量
 
-Install the App on the repositories or accounts that should use it.
-
-## Configuration
-
-Copy the deploy env example:
+复制示例配置：
 
 ```bash
-cd github-app-bot/deploy
+cp deploy/.env.example deploy/.env
+```
+
+核心必填项：
+
+```env
+BOT_TRIGGER_PHRASES=/juya review
+ALLOWED_USERS=your-login,friend-login
+ALLOWED_USER_IDS=
+ALLOWED_REPO_OWNERS=your-login,friend-login
+BOT_REPO_ROOT=/data/repos
+
+GITHUB_APP_ID=123456
+GITHUB_APP_PRIVATE_KEY_PATH=/config/github-app-private-key.pem
+GITHUB_WEBHOOK_SECRET=replace-with-random-hex
+
+OCR_LLM_URL=https://api.example.com
+OCR_LLM_TOKEN=replace-with-provider-token
+OCR_LLM_MODEL=your-model
+```
+
+常用运行参数：
+
+| 变量 | 默认值 | 用途 |
+| --- | --- | --- |
+| `PORT` | `3007` | HTTP 监听端口 |
+| `MAX_REVIEW_COMMENTS` | `30` | 单任务最多发布的审查评论 |
+| `JOB_TIMEOUT_MS` | `1200000` | 单任务总超时 |
+| `CLEANUP_WORKDIR` | `true` | 任务结束后清理临时目录 |
+| `WEBHOOK_BODY_LIMIT_BYTES` | `1048576` | webhook body 上限 |
+| `OCR_CONCURRENCY` | `1` | OpenCodeReview engine 文件并发 |
+| `OCR_MAX_GIT_PROCS` | `2` | OpenCodeReview engine git 子进程并发 |
+| `OCR_PER_FILE_TIMEOUT_MINUTES` | `10` | OpenCodeReview engine 单文件超时 |
+| `LLM_PROXY_USER_AGENT` | `juya-review-bot/0.1.0` | 内置 LLM 代理的 User-Agent |
+
+OpenAI 兼容端点通常设置 `OCR_USE_ANTHROPIC=false`；Anthropic 兼容端点通常设置 `OCR_USE_ANTHROPIC=true` 和 `OCR_LLM_AUTH_HEADER=x-api-key`。
+
+内置 LLM 代理只用于容器内私有流量。启用时配置 `LLM_PROXY_TARGET_URL`、`LLM_PROXY_INTERNAL_TOKEN`、`LLM_PROXY_UPSTREAM_AUTH_HEADER` 和 `LLM_PROXY_UPSTREAM_TOKEN`；不要把 `/llm/*` 暴露到公网。
+
+## 本地测试与镜像构建
+
+需要 Node.js 20 或更高版本：
+
+```bash
+npm ci
+npm test
+find src test -name '*.js' -print0 | xargs -0 -n1 node --check
+```
+
+完整构建和 engine 验证：
+
+```bash
+docker build --pull --no-cache -t juya-review-bot:dev .
+docker run --rm --entrypoint ocr juya-review-bot:dev --version
+docker run --rm --entrypoint ocr juya-review-bot:dev review --help
+```
+
+`review --help` 必须继续提供 `--from`、`--to`、`--format`、`--concurrency`、`--max-git-procs` 和 `--timeout`。
+
+## VPS 部署
+
+准备运行目录：
+
+```bash
+cd deploy
 cp .env.example .env
 mkdir -p data/repos data/admin
 chmod 600 .env
 sudo chown -R 10001:10001 data
 ```
 
-Put the GitHub App private key at:
-
-```text
-github-app-bot/deploy/github-app-private-key.pem
-```
-
-Recommended permissions:
+将 GitHub App 私钥保存为 `deploy/github-app-private-key.pem` 并执行 `chmod 600 github-app-private-key.pem`。启动或升级：
 
 ```bash
-sudo chown 10001:10001 github-app-private-key.pem
-chmod 600 github-app-private-key.pem
+docker compose pull
+docker compose up -d
 ```
 
-The private key path in `.env` is the container path:
+Compose 使用 `ghcr.io/makomakogo/juya-review-bot:latest`、非 root UID/GID `10001:10001`、只读私钥挂载、持久化 `data/`，并只在 `127.0.0.1:3007` 暴露服务。
 
-```env
-GITHUB_APP_PRIVATE_KEY_PATH=/config/github-app-private-key.pem
+健康检查：
+
+```bash
+curl http://127.0.0.1:3007/health
 ```
 
-Required values in `.env`:
-
-```env
-BOT_TRIGGER_PHRASE=/ocr review
-BOT_TRIGGER_PHRASES=/ocr review
-ALLOWED_USERS=your-login,friend-login
-ALLOWED_USER_IDS=
-ALLOWED_REPO_OWNERS=your-login,friend-login
-
-GITHUB_APP_ID=123456
-GITHUB_APP_PRIVATE_KEY_PATH=/config/github-app-private-key.pem
-GITHUB_WEBHOOK_SECRET=replace-with-random-hex
-
-OCR_LLM_URL=https://api.anthropic.com
-OCR_LLM_TOKEN=replace-with-llm-token
-OCR_LLM_MODEL=claude-sonnet-4-6
-OCR_USE_ANTHROPIC=true
-OCR_LLM_AUTH_HEADER=x-api-key
-WEBHOOK_BODY_LIMIT_BYTES=1048576
-LLM_PROXY_BODY_LIMIT_BYTES=67108864
+```json
+{"ok":true,"service":"juya-review-bot"}
 ```
 
-For OpenAI-compatible Chat Completions endpoints:
+## Juya Console
 
-```env
-OCR_USE_ANTHROPIC=false
-OCR_LLM_AUTH_HEADER=
-OCR_LLM_URL=https://api.example.com/v1
-OCR_LLM_MODEL=your-model
-```
-
-For Anthropic-compatible endpoints that require a local header-rewriting proxy:
-
-```env
-OCR_LLM_URL=http://127.0.0.1:3007/llm/anthropic
-OCR_LLM_TOKEN=local-proxy-token
-OCR_LLM_MODEL=claude-sonnet-4-6
-OCR_USE_ANTHROPIC=true
-OCR_LLM_AUTH_HEADER=authorization
-LLM_PROXY_TARGET_URL=https://provider.example.com/anthropic/v1/messages
-LLM_PROXY_USER_AGENT=open-code-review-github-app-bot/0.1.0
-LLM_PROXY_X_APP=
-LLM_PROXY_INTERNAL_TOKEN=local-proxy-token
-LLM_PROXY_BODY_LIMIT_BYTES=67108864
-LLM_PROXY_UPSTREAM_AUTH_HEADER=authorization
-LLM_PROXY_UPSTREAM_TOKEN=Bearer provider-token
-```
-
-The local proxy accepts OCR's `Authorization: Bearer <LLM_PROXY_INTERNAL_TOKEN>` or `X-Api-Key: <LLM_PROXY_INTERNAL_TOKEN>`, then replaces it with `LLM_PROXY_UPSTREAM_AUTH_HEADER` and `LLM_PROXY_UPSTREAM_TOKEN` for the provider. Do not expose `/llm/*` through the public reverse proxy.
-
-## Admin dashboard
-
-The admin dashboard code is included in the published image. Set `ADMIN_PASSWORD` to a value with at least 16 characters to enable the embedded dashboard at `/admin/`. If `ADMIN_PASSWORD` is unset or too short, `/admin/*` returns 404 after the Host guard.
+将 `ADMIN_PASSWORD` 设置为至少 16 个字符后，可在 `/admin/` 使用 Juya Console：
 
 ```env
 ADMIN_PASSWORD=replace-with-long-admin-password
@@ -156,123 +154,35 @@ ADMIN_ALLOWED_HOSTS=review.example.com
 ADMIN_SESSION_TTL_HOURS=12
 ADMIN_COOKIE_SECURE=true
 ADMIN_TRUST_PROXY=true
-JOB_HISTORY_RETENTION_DAYS=90
-JOB_LOG_RETENTION_DAYS=14
-STATS_RETENTION_DAYS=365
-CONFIG_AUDIT_RETENTION_DAYS=365
-JOB_LOG_MAX_BYTES=5242880
-ADMIN_DATA_MAX_BYTES=536870912
-RETENTION_INTERVAL_HOURS=6
 ```
 
-`ADMIN_DATA_DIR` is runtime state and should be writable by UID/GID `10001`; `/config` stays read-only. On the VPS, `/data/admin` maps to `github-app-bot/deploy/data/admin`. Config precedence is code defaults, environment, then `/data/admin/config-overrides.json`. The dashboard can edit bot config except `ADMIN_PASSWORD`, `ADMIN_DATA_DIR`, and the legacy `ADMIN_STORAGE_DIR` alias. Queued jobs load the latest config when they start; running jobs keep their start-time config snapshot. `PORT` changes are written with a pending-restart marker, then cleared after the process successfully binds the requested port.
+后台保存任务历史、受限日志、统计、配置审计和 session 状态。`ADMIN_DATA_DIR` 必须允许 UID/GID `10001` 写入。后台可编辑允许热更新的配置，但不能编辑 `ADMIN_PASSWORD` 和 `ADMIN_DATA_DIR`。
 
-The dashboard stores job history, bounded per-job logs, daily stats, config audit records, session state, and retention state under `/data/admin`. Logs keep stage messages, errors, git stderr, and OCR stderr; they do not store OCR stdout, webhook payloads, raw provider output, or secrets. Retention runs at startup and then every `RETENTION_INTERVAL_HOURS` hours. Defaults retain task details for 90 days, logs for 14 days, stats and config audit records for 365 days, cap each job log at 5 MiB, and apply a 512 MiB soft cap to `/data/admin`.
-
-All admin POSTs require same-origin `Origin` or `Referer` plus CSRF. Admin cookies are `HttpOnly`, `SameSite=Strict`, `Path=/admin/`, and use `Secure` when `ADMIN_COOKIE_SECURE=true`. Keep `ADMIN_TRUST_PROXY=false` unless the process is behind a trusted reverse proxy that overwrites `X-Real-IP` and `X-Forwarded-Proto`.
-
-## Run
-
-```bash
-cd github-app-bot/deploy
-docker compose pull
-docker compose up -d
-```
-
-Health check:
-
-```bash
-curl http://127.0.0.1:3007/health
-```
-
-Expected response:
-
-```json
-{"ok":true,"service":"open-code-review-github-app-bot"}
-```
-
-## Image build and upgrades
-
-The bot image is built by GitHub Actions from `github-app-bot/Dockerfile` and pushed to GHCR as `ghcr.io/makomakogo/open-code-review-github-app-bot:latest`.
-
-For anonymous `docker compose pull`, make the GHCR package public after its first publish. If the package stays private, run `docker login ghcr.io` on the VPS with a token that can read packages before pulling.
-
-The Dockerfile intentionally installs `@alibaba-group/open-code-review@latest`. The image workflow builds with `--pull --no-cache`, so each image build resolves the current npm latest version instead of reusing an old Docker layer. The build log prints `ocr --version`; that is the exact OCR version baked into the image.
-
-To upgrade the VPS:
-
-```bash
-cd github-app-bot/deploy
-docker compose pull
-docker compose up -d
-```
-
-## Reverse proxy
-
-Expose `/admin/*` only when the dashboard is intentionally enabled. Never expose `/llm/*` publicly.
+管理路由包括：
 
 ```text
-GET  /health
-POST /github/webhook
 GET  /admin/
+GET  /admin/assets/juya.jpg
 GET  /admin/*
 POST /admin/*
 ```
 
-Example OpenResty server block:
+## 安全边界
 
-```nginx
-server {
-    listen 443 ssl;
-    http2 on;
-    server_name review.example.com;
+- webhook 必须通过 HMAC-SHA256 签名校验。
+- 触发者和仓库所有者必须在 allowlist 中，私有仓库不会进入审查流程。
+- GitHub App 私钥只读挂载，不进入镜像或 Git。
+- 管理后台使用 Host allowlist、同源检查、CSRF、`HttpOnly`/`SameSite=Strict` cookie 和严格 CSP。
+- Juya 图标只有固定的 `GET /admin/assets/juya.jpg` 路由；服务不会开放通用静态目录。
+- 日志不保存 webhook payload、OCR stdout、原始供应商响应或密钥；敏感字段会被脱敏。
+- 公网反向代理只应暴露 `/health`、`/github/webhook` 和明确启用的 `/admin/*`，不得暴露 `/llm/*`。
 
-    location = /health {
-        proxy_pass http://127.0.0.1:3007/health;
-        access_log off;
-    }
+## OpenCodeReview `@latest` 策略
 
-    location = /github/webhook {
-        proxy_pass http://127.0.0.1:3007/github/webhook;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_connect_timeout 10s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
+镜像构建时执行 `npm install -g @alibaba-group/open-code-review@latest`。CI 每日使用 `--pull --no-cache` 重新解析 npm 当前的 `@latest`，并以 `latest` 和 `ocr-<实际版本>` 发布镜像。镜像运行时设置 `OCR_NO_UPDATE=1`，因此 OpenCodeReview engine 不会在容器启动或执行审查时自行更新。
 
-    location = /admin {
-        return 308 /admin/;
-    }
+这个策略有意不 pin OpenCodeReview engine 版本：同一 Git commit 在不同日期构建可能解析到不同版本，所以构建不保证可复现。实际 engine 版本由镜像标签、构建日志和 GitHub Actions job summary 记录。
 
-    location /admin/ {
-        proxy_pass http://127.0.0.1:3007/admin/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        proxy_connect_timeout 10s;
-        proxy_send_timeout 60s;
-        proxy_read_timeout 60s;
-    }
+## 许可证
 
-    location / {
-        return 404;
-    }
-}
-```
-
-## Operational notes
-
-- The bot accepts only PR comments matching `BOT_TRIGGER_PHRASES` exactly after trimming whitespace.
-- Sender authorization checks both `sender.login` and `sender.id`.
-- Repository authorization checks `repository.owner.login`.
-- Private repositories are always ignored; this bot fetches pull requests through public HTTPS remotes only.
-- Queued and running jobs are recovered as `interrupted` after restart; no automatic retry is attempted.
-- `OCR_CONCURRENCY=1` serializes OCR file reviews. Raise only if the LLM provider can handle concurrent requests.
-- Failure comments are classified into checkout, GitHub API, timeout, configuration, provider authentication, rate-limit, provider availability, stale PR, invalid OCR output, and runtime failures. They include a diagnostic id but never include raw OCR output or provider responses.
-- `CLEANUP_WORKDIR=true` deletes `/data/repos/<owner>-<repo>-<pr>-<sha>` after each job.
+本仓库使用 [Apache License 2.0](LICENSE)。Powered by OpenCodeReview；底层 npm 包及其归属、许可证和商标由 OpenCodeReview 项目维护，本仓库的产品身份为 Juya Review Bot。

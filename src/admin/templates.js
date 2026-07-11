@@ -1,4 +1,7 @@
 import { scriptTag } from './security.js';
+import { ENGINE, PRODUCT } from '../brand.js';
+
+const SIDEBAR_NAME = PRODUCT.shortName[0].toUpperCase() + PRODUCT.shortName.slice(1);
 
 const SECRET_KEY_PATTERN = /(SECRET|TOKEN|PASSWORD|PRIVATE|AUTH|KEY|WEBHOOK|LLM_PROXY|OCR_LLM)/i;
 
@@ -71,20 +74,20 @@ export function renderLayout({ title, active = 'dashboard', csrfToken = '', body
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${escapeHtml(title)} · Open Code Review Admin</title>
+<title>${escapeHtml(title)} · ${escapeHtml(PRODUCT.consoleName)}</title>
 ${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>
 </head>
 <body>
 <a class="skip-link" href="#main" data-i18n="skip_to_main">Skip to main</a>
 <div class="app">
   <aside class="side">
-    <a class="brand" href="/admin/"><span class="mark">ocr</span><span class="brand-name">ocr-admin</span><span class="brand-tag" data-i18n="nav_brand_tag">self-hosted</span></a>
+    <a class="brand" href="/admin/"><span class="mark">${escapeHtml(SIDEBAR_NAME[0])}</span><span class="brand-name">${escapeHtml(SIDEBAR_NAME)}</span></a>
     <nav class="nav" aria-label="Sections" data-i18n-aria-label="aria_sections">${navItems}</nav>
-    <div class="side-foot" data-i18n="nav_side_foot">Open Code Review</div>
+    <div class="side-foot" data-i18n="nav_side_foot">Powered by ${escapeHtml(ENGINE.name)}</div>
   </aside>
   <div class="main">
     <header class="topbar">
-      <div class="crumb"><span class="muted">ocr-admin</span><span class="sep" aria-hidden="true">/</span><span class="crumb-current"${titleAttr}>${escapeHtml(title)}</span></div>
+      <div class="crumb"><span class="muted">${escapeHtml(PRODUCT.shortName)}</span><span class="sep" aria-hidden="true">/</span><span class="crumb-current"${titleAttr}>${escapeHtml(title)}</span></div>
       <div class="topbar-actions">${togglesHtml()}${logoutForm}</div>
     </header>
     <main id="main" class="content" tabindex="-1"><h1 class="page-title"${titleAttr}>${escapeHtml(title)}</h1>${body}</main>
@@ -111,16 +114,16 @@ export function renderLoginPage({ csrfToken = '', error = '', disabledReason = '
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Sign in · Open Code Review Admin</title>
+<title>Sign in · ${escapeHtml(PRODUCT.consoleName)}</title>
 ${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>
 </head>
 <body class="login-body">
 <div class="login-shell">
   <div class="login-toolbar">${togglesHtml()}</div>
   <main class="login-card">
-    <div class="login-brand"><span class="mark">ocr</span><span class="login-brand-name">ocr-admin</span></div>
+    <div class="login-brand"><span class="mark">${escapeHtml(SIDEBAR_NAME[0])}</span><span class="login-brand-name">${escapeHtml(PRODUCT.consoleName)}</span></div>
     <h1 class="login-title" data-i18n="login_title">Sign in</h1>
-    <p class="login-sub muted" data-i18n="login_sub">Open Code Review admin console</p>
+    <p class="login-sub muted" data-i18n="login_sub">${escapeHtml(PRODUCT.name)} administration</p>
     ${message}${form}
   </main>
 </div>
@@ -584,7 +587,7 @@ export const CONFIG_GROUP_DEFS = Object.freeze([
   { id: 'service', label: 'Service', labelKey: 'config_group_service', descriptionKey: 'config_group_service_desc', description: 'Core runtime process, ports, and workdir behavior.' },
   { id: 'access', label: 'Triggers & Access', labelKey: 'config_group_access', descriptionKey: 'config_group_access_desc', description: 'Who can trigger reviews and which repositories are allowed.' },
   { id: 'github', label: 'GitHub App', labelKey: 'config_group_github', descriptionKey: 'config_group_github_desc', description: 'GitHub App identity, private key path, and webhook secret.' },
-  { id: 'ocr', label: 'OCR Engine', labelKey: 'config_group_ocr', descriptionKey: 'config_group_ocr_desc', description: 'OpenCodeReview provider endpoint, model, and concurrency.' },
+  { id: 'ocr', label: 'OCR Engine', labelKey: 'config_group_ocr', descriptionKey: 'config_group_ocr_desc', description: `${ENGINE.name} engine provider endpoint, model, and concurrency.` },
   { id: 'proxy', label: 'LLM Proxy', labelKey: 'config_group_proxy', descriptionKey: 'config_group_proxy_desc', description: 'Internal LLM proxy routing and upstream authentication.' },
   { id: 'admin', label: 'Admin Dashboard', labelKey: 'config_group_admin', descriptionKey: 'config_group_admin_desc', description: 'Dashboard access, host allowlist, cookies, and data root.' },
   { id: 'retention', label: 'Retention & Storage', labelKey: 'config_group_retention', descriptionKey: 'config_group_retention_desc', description: 'How long jobs, logs, stats, and audits are kept.' },
@@ -1011,11 +1014,11 @@ function jobStatusPill(status) {
 
 const I18N = {
   en: {
-    nav_dashboard: 'Status', nav_jobs: 'Jobs', nav_metrics: 'Metrics', nav_config: 'Settings', nav_brand_tag: 'self-hosted', nav_side_foot: 'Open Code Review', signout: 'Sign out',
+    nav_dashboard: 'Status', nav_jobs: 'Jobs', nav_metrics: 'Metrics', nav_config: 'Settings', nav_brand_tag: 'self-hosted', nav_side_foot: `Powered by ${ENGINE.name}`, signout: 'Sign out',
     toggle_theme: 'Toggle theme', toggle_theme_dark: 'Switch to dark theme', toggle_theme_light: 'Switch to light theme',
     toggle_lang: 'Switch language', toggle_lang_en: 'Switch to English', toggle_lang_zh: 'Switch to Chinese',
     page_dashboard: 'Status', page_jobs: 'Jobs', page_metrics: 'Metrics', page_config: 'Settings', jobs_page_desc: 'Review queue history, filter failures, and open job detail logs.', overview_page_desc: 'Service health, queue, and current activity.', metrics_page_desc: 'Latency, comment volume, failure classification, and repository success trends.', config_page_desc: 'Runtime configuration with audit trail. High-risk fields require confirmation.', btn_view_metrics: 'Open metrics →',
-    login_title: 'Sign in', login_sub: 'Open Code Review admin console', login_prompt: 'Enter the admin password',
+    login_title: 'Sign in', login_sub: `${PRODUCT.name} administration`, login_prompt: 'Enter the admin password',
     label_password: 'Password', sign_in: 'Sign in',
     strip_queued: 'Queued', strip_running: 'Running', strip_succeeded: 'Succeeded', strip_warnings: 'Warnings', strip_failed: 'Failed',
     h2_diagnostics: 'Diagnostics', empty_jobs: 'No jobs found.', empty_diagnostics: 'No diagnostics.',
@@ -1042,7 +1045,7 @@ const I18N = {
     th_field: 'Field', th_effective: 'Effective value', th_edit: 'Edit', th_state: 'State', btn_save_config: 'Save changes',
     keep_secret: 'Keep current secret', clear_secret: 'Clear secret', replace_with: 'Replace with', reset_override: 'Reset override', confirm_high_risk: 'Confirm high-risk change',
     not_editable: 'Not editable from dashboard.', secret_set: 'secret set', not_set: 'not set', admin_dashboard_enabled: 'dashboard enabled', admin_dashboard_disabled: 'dashboard disabled',
-    config_group_service: 'Service', config_group_access: 'Triggers & Access', config_group_github: 'GitHub App', config_group_ocr: 'OCR Engine', config_group_proxy: 'LLM Proxy', config_group_admin: 'Admin Dashboard', config_group_retention: 'Retention & Storage', config_group_service_desc: 'Core runtime process, ports, and workdir behavior.', config_group_access_desc: 'Who can trigger reviews and which repositories are allowed.', config_group_github_desc: 'GitHub App identity, private key path, and webhook secret.', config_group_ocr_desc: 'OpenCodeReview provider endpoint, model, and concurrency.', config_group_proxy_desc: 'Internal LLM proxy routing and upstream authentication.', config_group_admin_desc: 'Dashboard access, host allowlist, cookies, and data root.', config_group_retention_desc: 'How long jobs, logs, stats, and audits are kept.',
+    config_group_service: 'Service', config_group_access: 'Triggers & Access', config_group_github: 'GitHub App', config_group_ocr: 'OCR Engine', config_group_proxy: 'LLM Proxy', config_group_admin: 'Admin Dashboard', config_group_retention: 'Retention & Storage', config_group_service_desc: 'Core runtime process, ports, and workdir behavior.', config_group_access_desc: 'Who can trigger reviews and which repositories are allowed.', config_group_github_desc: 'GitHub App identity, private key path, and webhook secret.', config_group_ocr_desc: `${ENGINE.name} engine provider endpoint, model, and concurrency.`, config_group_proxy_desc: 'Internal LLM proxy routing and upstream authentication.', config_group_admin_desc: 'Dashboard access, host allowlist, cookies, and data root.', config_group_retention_desc: 'How long jobs, logs, stats, and audits are kept.',
     config_field_total: 'fields', config_override_count: 'overrides', config_secret_count: 'secrets', config_restart_count: 'restart required',
     config_no_matches: 'No matching configuration fields.',
     aria_config_filters: 'Field filters', aria_config_groups: 'Config groups',
@@ -1051,11 +1054,11 @@ const I18N = {
     logs_degraded: 'Log history is degraded.', pagination_summary: 'page {page} / {total-pages} · {total} jobs',
   },
   zh: {
-    nav_dashboard: '状态', nav_jobs: '任务', nav_metrics: '指标', nav_config: '设置', nav_brand_tag: '自托管', nav_side_foot: 'Open Code Review', signout: '退出',
+    nav_dashboard: '状态', nav_jobs: '任务', nav_metrics: '指标', nav_config: '设置', nav_brand_tag: '自托管', nav_side_foot: `Powered by ${ENGINE.name}`, signout: '退出',
     toggle_theme: '切换主题', toggle_theme_dark: '切换到深色主题', toggle_theme_light: '切换到浅色主题',
     toggle_lang: '切换语言', toggle_lang_en: '切换到英文', toggle_lang_zh: '切换到中文',
     page_dashboard: '状态', page_jobs: '任务', page_metrics: '指标', page_config: '设置', metrics_page_desc: '耗时、评论量、失败分类与仓库成功率趋势。', btn_view_metrics: '打开指标 →', jobs_page_desc: '查看任务历史、筛选失败并打开任务日志。', overview_page_desc: '服务健康、队列与当前动态。', config_page_desc: '运行时配置带审计记录。高风险字段需确认。',
-    login_title: '登录', login_sub: 'Open Code Review 管理控制台', login_prompt: '输入管理员密码',
+    login_title: '登录', login_sub: `${PRODUCT.name} administration`, login_prompt: '输入管理员密码',
     label_password: '密码', sign_in: '登录',
     strip_queued: '排队', strip_running: '运行中', strip_succeeded: '成功', strip_warnings: '带警告', strip_failed: '失败',
     h2_diagnostics: '诊断', empty_jobs: '暂无任务。', empty_diagnostics: '暂无诊断。',
@@ -1082,7 +1085,7 @@ const I18N = {
     th_field: '字段', th_effective: '生效值', th_edit: '编辑', th_state: '状态', btn_save_config: '保存更改',
     keep_secret: '保留当前密钥', clear_secret: '清除密钥', replace_with: '替换为', reset_override: '重置覆盖', confirm_high_risk: '确认高风险变更',
     not_editable: '控制台不可编辑。', secret_set: '密钥已设', not_set: '未设置', admin_dashboard_enabled: '控制台已启用', admin_dashboard_disabled: '控制台已禁用',
-    config_group_service: '服务', config_group_access: '触发与权限', config_group_github: 'GitHub App', config_group_ocr: 'OCR 引擎', config_group_proxy: 'LLM 代理', config_group_admin: '管理控制台', config_group_retention: '保留与存储', config_group_service_desc: '核心运行时、端口与工作目录行为。', config_group_access_desc: '谁可以触发审查，以及允许哪些仓库。', config_group_github_desc: 'GitHub App 身份、私钥路径与 webhook 密钥。', config_group_ocr_desc: 'OpenCodeReview 供应商地址、模型与并发。', config_group_proxy_desc: '内部 LLM 代理路由与上游鉴权。', config_group_admin_desc: '控制台访问、Host 白名单、Cookie 与数据目录。', config_group_retention_desc: '任务、日志、统计与审计的保留时长。',
+    config_group_service: '服务', config_group_access: '触发与权限', config_group_github: 'GitHub App', config_group_ocr: 'OCR 引擎', config_group_proxy: 'LLM 代理', config_group_admin: '管理控制台', config_group_retention: '保留与存储', config_group_service_desc: '核心运行时、端口与工作目录行为。', config_group_access_desc: '谁可以触发审查，以及允许哪些仓库。', config_group_github_desc: 'GitHub App 身份、私钥路径与 webhook 密钥。', config_group_ocr_desc: `${ENGINE.name} engine 的供应商地址、模型与并发。`, config_group_proxy_desc: '内部 LLM 代理路由与上游鉴权。', config_group_admin_desc: '控制台访问、Host 白名单、Cookie 与数据目录。', config_group_retention_desc: '任务、日志、统计与审计的保留时长。',
     config_field_total: '字段', config_override_count: '覆盖项', config_secret_count: '密钥', config_restart_count: '需重启',
     config_no_matches: '没有匹配的配置项。',
     aria_config_filters: '配置筛选', aria_config_groups: '配置分组',
@@ -1093,7 +1096,7 @@ const I18N = {
 };
 
 function themeInitScript(nonce) {
-  return scriptTag(`(function(){try{var t=localStorage.getItem('ocr-theme');if(t!=='light'&&t!=='dark'){t='light';}document.documentElement.dataset.theme=t;var l=localStorage.getItem('ocr-lang');if(l!=='en'&&l!=='zh'){l=((navigator.language||'en').toLowerCase().indexOf('zh')===0)?'zh':'en';}document.documentElement.lang=l;}catch(e){document.documentElement.dataset.theme='light';document.documentElement.lang='en';}})();`, nonce);
+  return scriptTag(`(function(){try{var t=localStorage.getItem('${PRODUCT.shortName}-theme');if(t!=='light'&&t!=='dark'){t='light';}document.documentElement.dataset.theme=t;var l=localStorage.getItem('${PRODUCT.shortName}-lang');if(l!=='en'&&l!=='zh'){l=((navigator.language||'en').toLowerCase().indexOf('zh')===0)?'zh':'en';}document.documentElement.lang=l;}catch(e){document.documentElement.dataset.theme='light';document.documentElement.lang='en';}})();`, nonce);
 }
 
 function togglesHtml() {
@@ -1109,7 +1112,7 @@ export function safeScriptJson(value) {
     .replace(/\u2029/g, '\\u2029');
 }
 function bodyScript(nonce) {
-  return scriptTag(`(function(){var I18N=${safeScriptJson(I18N)};function dict(){return I18N[document.documentElement.lang]||I18N.en;}function applyLang(){var d=dict();document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(d[k]!==undefined)el.textContent=d[k];});document.querySelectorAll('[data-i18n-aria-label]').forEach(function(el){var k=el.getAttribute('data-i18n-aria-label');if(d[k]!==undefined)el.setAttribute('aria-label',d[k]);});document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){var k=el.getAttribute('data-i18n-placeholder');if(d[k]!==undefined)el.setAttribute('placeholder',d[k]);});document.querySelectorAll('[data-i18n-template]').forEach(function(el){var t=d[el.getAttribute('data-i18n-template')];if(t!==undefined){el.textContent=t.split('{page}').join(el.getAttribute('data-page')||'').split('{total-pages}').join(el.getAttribute('data-total-pages')||'').split('{total}').join(el.getAttribute('data-total')||'').split('{visible}').join(el.getAttribute('data-visible')||'');}});document.querySelectorAll('[data-theme-target]').forEach(function(b){var light=document.documentElement.dataset.theme==='light';b.setAttribute('aria-label',light?d.toggle_theme_dark:d.toggle_theme_light);});document.querySelectorAll('[data-lang-target]').forEach(function(b){var zh=document.documentElement.lang==='zh';b.textContent=zh?'EN':'中文';b.setAttribute('aria-label',zh?d.toggle_lang_en:d.toggle_lang_zh);});}function setLang(l){document.documentElement.lang=l;try{localStorage.setItem('ocr-lang',l);}catch(e){}applyLang();}function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('ocr-theme',t);}catch(e){}applyLang();}document.addEventListener('click',function(e){var n=e.target.closest&&e.target.closest('[data-act]');if(!n)return;var a=n.getAttribute('data-act');if(a==='toggle-lang')setLang(document.documentElement.lang==='zh'?'en':'zh');else if(a==='toggle-theme')setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');});applyLang();})();`, nonce);
+  return scriptTag(`(function(){var I18N=${safeScriptJson(I18N)};function dict(){return I18N[document.documentElement.lang]||I18N.en;}function applyLang(){var d=dict();document.querySelectorAll('[data-i18n]').forEach(function(el){var k=el.getAttribute('data-i18n');if(d[k]!==undefined)el.textContent=d[k];});document.querySelectorAll('[data-i18n-aria-label]').forEach(function(el){var k=el.getAttribute('data-i18n-aria-label');if(d[k]!==undefined)el.setAttribute('aria-label',d[k]);});document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){var k=el.getAttribute('data-i18n-placeholder');if(d[k]!==undefined)el.setAttribute('placeholder',d[k]);});document.querySelectorAll('[data-i18n-template]').forEach(function(el){var t=d[el.getAttribute('data-i18n-template')];if(t!==undefined){el.textContent=t.split('{page}').join(el.getAttribute('data-page')||'').split('{total-pages}').join(el.getAttribute('data-total-pages')||'').split('{total}').join(el.getAttribute('data-total')||'').split('{visible}').join(el.getAttribute('data-visible')||'');}});document.querySelectorAll('[data-theme-target]').forEach(function(b){var light=document.documentElement.dataset.theme==='light';b.setAttribute('aria-label',light?d.toggle_theme_dark:d.toggle_theme_light);});document.querySelectorAll('[data-lang-target]').forEach(function(b){var zh=document.documentElement.lang==='zh';b.textContent=zh?'EN':'中文';b.setAttribute('aria-label',zh?d.toggle_lang_en:d.toggle_lang_zh);});}function setLang(l){document.documentElement.lang=l;try{localStorage.setItem('${PRODUCT.shortName}-lang',l);}catch(e){}applyLang();}function setTheme(t){document.documentElement.dataset.theme=t;try{localStorage.setItem('${PRODUCT.shortName}-theme',t);}catch(e){}applyLang();}document.addEventListener('click',function(e){var n=e.target.closest&&e.target.closest('[data-act]');if(!n)return;var a=n.getAttribute('data-act');if(a==='toggle-lang')setLang(document.documentElement.lang==='zh'?'en':'zh');else if(a==='toggle-theme')setTheme(document.documentElement.dataset.theme==='light'?'dark':'light');});applyLang();})();`, nonce);
 }
 
 function fontLinks() {
@@ -1141,10 +1144,8 @@ function baseStyles() {
   --ok: var(--green); --warn: var(--amber); --fail: var(--red); --run: var(--cyan); --queued: var(--faint);
   --accent: var(--cyan); --link: var(--cyan); --link-hover: #0550ae; --link-shadow: none;
   --primary-bg: #1f883d; --primary-bg-hover: #1a7f37;
-  /* radii, motion, elevation — Primer-ish */
+  /* radii and elevation — Primer-ish */
   --radius: 6px; --radius-sm: 6px; --radius-pill: 999px;
-  --t-fast: 120ms; --t-med: 160ms; --t-slow: 220ms;
-  --ease: cubic-bezier(0.2, 0, 0, 1);
   --shadow-card: 0 1px 2px rgba(31, 35, 40, 0.06);
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
@@ -1182,7 +1183,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 p { margin: 0.75rem 0; }
-a { color: var(--link); text-decoration: none; transition: color var(--t-fast) var(--ease), text-shadow var(--t-fast) var(--ease); }
+a { color: var(--link); text-decoration: none; }
 a:hover { color: var(--link-hover); text-shadow: var(--link-shadow); }
 code { font-family: var(--font-mono); background: var(--surface); padding: 0.15em 0.4em; border-radius: var(--radius-sm); color: var(--text); font-size: 0.9em; border: 1px solid var(--border); }
 pre { margin: 0.8rem 0; padding: 1rem; white-space: pre-wrap; word-break: break-word; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); font-family: var(--font-mono); font-size: 13px; }
@@ -1219,7 +1220,6 @@ h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; }
 .nav a {
   display: flex; align-items: center; gap: 8px; color: var(--text); text-decoration: none;
   padding: 7px 10px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 500;
-  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .nav a:hover { background: var(--surface); text-decoration: none; }
 .nav a.active { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
@@ -1230,8 +1230,6 @@ h1, h2, h3, h4 { font-weight: 600; letter-spacing: -0.02em; }
 :root[data-theme="dark"] .toggle-btn .theme-sun { display: block; }
 .nav a .nav-text { min-width: 0; }
 .side-foot { margin-top: auto; font-size: 11px; color: var(--faint); padding: 8px 10px; }
-@keyframes blink { to { visibility: hidden; } }
-
 .main { display: flex; flex-direction: column; min-width: 0; min-height: 100vh; }
 header.topbar {
   position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 16px;
@@ -1249,7 +1247,6 @@ header.topbar {
   background: var(--surface); border: 1px solid var(--btn-border);
   padding: 5px 12px; border-radius: var(--radius-sm); cursor: pointer;
   text-transform: none; letter-spacing: 0; min-height: 32px;
-  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
 .toggle-btn:hover, .signout button:hover {
   background: var(--surface-2); border-color: var(--border-bright); color: var(--text);
@@ -1262,7 +1259,7 @@ h1.page-title { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; marg
 .content { padding: 24px 32px 64px; max-width: 1216px; width: 100%; }
 main.centered { max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; }
 .back { margin: 0 0 1.5rem; }
-.back a { color: var(--muted); font-weight: 500; padding: 0.4rem 0.8rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); transition: color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.back a { color: var(--muted); font-weight: 500; padding: 0.4rem 0.8rem; background: var(--surface); border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .back a:hover { color: var(--text); background: var(--surface-2); text-decoration: none; }
 
 @media (max-width: 860px) {
@@ -1317,17 +1314,16 @@ dd { margin: 0; color: var(--text); font-size: 14px; padding: 0.5rem 0; border-b
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
 th, td { padding: 0.55rem 0.9rem; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; }
 thead th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 9px 14px; border-bottom: 1px solid var(--border); background: var(--bg); white-space: nowrap; }
-tbody tr { transition: background var(--t-fast) var(--ease); }
 tbody tr:hover { background: var(--surface); }
 tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 
-button, input, select { font-family: var(--font-sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 13.5px; transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+button, input, select { font-family: var(--font-sans); color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 13.5px; }
 button { cursor: pointer; font-weight: 500; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-transform: none; letter-spacing: 0; font-size: 13px; }
 button:hover { border-color: var(--border-bright); background: var(--surface-2); }
 button.primary { background: var(--primary-bg); color: #fff; border: 1px solid rgba(31, 35, 40, 0.15); font-weight: 600; padding: 0.45rem 0.95rem; box-shadow: var(--shadow-flat); text-transform: none; letter-spacing: 0; min-height: 32px; }
 button.primary:hover { background: var(--primary-bg-hover); opacity: 1; }
 button.primary:active { background: var(--primary-bg-hover); }
-.filter-reset { font-family: var(--font-sans); font-size: 13px; font-weight: 500; line-height: normal; color: var(--text); text-transform: none; letter-spacing: 0; padding: 5px 12px; border: 1px solid var(--btn-border); border-radius: var(--radius-sm); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease); }
+.filter-reset { font-family: var(--font-sans); font-size: 13px; font-weight: 500; line-height: normal; color: var(--text); text-transform: none; letter-spacing: 0; padding: 5px 12px; border: 1px solid var(--btn-border); border-radius: var(--radius-sm); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .filter-reset:hover { color: var(--text); border-color: var(--border-bright); background: var(--surface-2); text-decoration: none; }
 .filter-reset:active { background: var(--surface-2); }
 
@@ -1369,7 +1365,7 @@ input[type=radio], input[type=checkbox] { accent-color: var(--accent); width: 1.
 .dpill.skip { background: var(--done-subtle); color: var(--done); border-color: var(--done-border); }
 
 /* filter chips + list-card shell — GitHub Primer */
-.chip { font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4; padding: 4px 11px; border-radius: 20px; border: 1px solid var(--border); color: var(--fg-muted); background: var(--bg); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none; appearance: none; -webkit-appearance: none; transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
+.chip { font-family: inherit; font-size: 12px; font-weight: 500; line-height: 1.4; padding: 4px 11px; border-radius: 20px; border: 1px solid var(--border); color: var(--fg-muted); background: var(--bg); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none; appearance: none; -webkit-appearance: none; }
 .chip:hover { background: var(--bg-subtle); border-color: var(--border-bright); color: var(--fg); text-decoration: none; }
 .chip.on { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent-border); font-weight: 600; }
 .btn-sm { min-height: 30px; padding: 4px 12px; font-size: 12px; }
@@ -1439,7 +1435,7 @@ ul.diagnostics li:last-child { border-bottom: 0; }
 ul.diagnostics .diag-msg { flex: 1; min-width: 200px; color: var(--muted); }
 
 nav.pagination { display: flex; gap: 1rem; align-items: center; justify-content: center; padding: 1.5rem 0 0; border-top: 1px solid var(--border); margin-top: 1.5rem; }
-nav.pagination a { padding: 0.4rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-weight: 500; font-size: 13px; background: var(--surface-2); transition: color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), background var(--t-fast) var(--ease), text-decoration var(--t-fast) var(--ease); }
+nav.pagination a { padding: 0.4rem 1rem; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-weight: 500; font-size: 13px; background: var(--surface-2); }
 nav.pagination a:hover { border-color: var(--border-bright); color: var(--text); background: var(--surface); text-decoration: none; }
 nav.pagination span { font-size: 13px; color: var(--muted); }
 nav.pagination span[aria-disabled=true] { opacity: 0.5; }
@@ -1472,9 +1468,8 @@ main > *:first-child { margin-top: 0; }
 
 details.card > summary { cursor: pointer; list-style: none; display: block; }
 details.card > summary::-webkit-details-marker { display: none; }
-details.card > summary > h2 { transition: background var(--t-fast) var(--ease); }
 details.card > summary:hover > h2 { background: var(--surface-3); }
-details.card > summary > h2::after { content: "\\2192"; margin-left: auto; font-family: sans-serif; transition: transform var(--t-slow) var(--ease); font-size: 14px; }
+details.card > summary > h2::after { content: "\\2192"; margin-left: auto; font-family: sans-serif; font-size: 14px; }
 details.card[open] > summary > h2::after { transform: rotate(90deg); }
 
 .empty { color: var(--muted); font-style: italic; }
@@ -1594,7 +1589,7 @@ details.card[open] > summary > h2::after { transform: rotate(90deg); }
 .job-filters .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .adv-filters > summary { list-style: none; cursor: pointer; padding: 8px 14px; font-size: 12px; font-weight: 600; color: var(--fg-muted); display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--border); background: var(--bg); }
 .adv-filters > summary::-webkit-details-marker { display: none; }
-.adv-filters > summary::before { content: ''; width: 0; height: 0; border-left: 4px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; transition: transform var(--t-fast) var(--ease); }
+.adv-filters > summary::before { content: ''; width: 0; height: 0; border-left: 4px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
 .adv-filters[open] > summary::before { transform: rotate(90deg); }
 .adv-filters[open] > summary { background: var(--bg-subtle); }
 .adv-grid { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; padding: 12px 14px; background: var(--bg-subtle); border-bottom: 1px solid var(--border); }

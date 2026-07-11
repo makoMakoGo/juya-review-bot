@@ -11,7 +11,6 @@ import { AdminJobQueue, BoundedJobLogger, createJobEvent, JobEventStore } from '
 
 const env = {
   PORT: '3007',
-  BOT_TRIGGER_PHRASE: '/juya review',
   BOT_TRIGGER_PHRASES: '/juya review',
   ALLOWED_USERS: 'alice',
   ALLOWED_USER_IDS: '',
@@ -103,7 +102,7 @@ test('service status renders actual listener port separately from configured por
 });
 
 test('job detail renders start-time config snapshot and auditable phase timeline', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-dashboard-status-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-dashboard-status-'));
   const eventsFile = path.join(dir, 'jobs', 'events.jsonl');
   const jobId = crypto.randomUUID();
   const events = [
@@ -170,7 +169,7 @@ test('job detail renders start-time config snapshot and auditable phase timeline
 });
 
 test('queue persists sanitized config snapshot captured at job start', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-start-snapshot-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-start-snapshot-'));
   const store = new JobEventStore({ adminDir: dir });
   let currentModel = 'queued-model';
   let releaseStart;

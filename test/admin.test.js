@@ -14,7 +14,6 @@ import { AdminJobQueue, BoundedJobLogger, JobEventStore, computeJobStats, create
 
 const env = {
   PORT: '3007',
-  BOT_TRIGGER_PHRASE: '/juya review',
   BOT_TRIGGER_PHRASES: '/juya review',
   ALLOWED_USERS: 'alice',
   ALLOWED_USER_IDS: '',
@@ -28,7 +27,7 @@ const env = {
 };
 
 test('admin config manager applies overrides without leaking secrets in summaries', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   await manager.writeOverrides({ OCR_CONCURRENCY: '3', OCR_LLM_TOKEN: 'new-secret' });
@@ -41,7 +40,7 @@ test('admin config manager applies overrides without leaking secrets in summarie
 });
 
 test('admin config rejects dashboard edits to admin credentials and data root', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
 
@@ -50,7 +49,7 @@ test('admin config rejects dashboard edits to admin credentials and data root', 
 });
 
 test('admin config applies secret blank keep clear replace semantics', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   await manager.setRawOverride('LLM_PROXY_INTERNAL_TOKEN', 'first-secret');
@@ -63,7 +62,7 @@ test('admin config applies secret blank keep clear replace semantics', async () 
 });
 
 test('admin config editor form validates whole candidate, confirms high-risk changes, and audits attempts', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir, ADMIN_ALLOWED_HOSTS: 'juya.011070.xyz' }, dataDir: dir });
   await manager.ensureStorageDir();
   const initial = await manager.load();
@@ -99,7 +98,7 @@ test('admin config editor form validates whole candidate, confirms high-risk cha
 });
 
 test('admin config success audit failure does not fail committed editor save', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-success-audit-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-success-audit-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const initial = await manager.load();
@@ -129,7 +128,7 @@ test('admin config success audit failure does not fail committed editor save', a
 });
 
 test('admin config summary exposes bot version', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-version-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-version-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir, BOT_VERSION: 'test-version' }, dataDir: dir });
   await manager.ensureStorageDir();
 
@@ -140,7 +139,7 @@ test('admin config summary exposes bot version', async () => {
 });
 
 test('admin config rejects concurrent stale editor submissions without losing the first update', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const initial = await manager.load();
@@ -188,7 +187,7 @@ test('admin config rejects concurrent stale editor submissions without losing th
 });
 
 test('admin config pending restart writes share override lock without deadlock', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-lock-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-lock-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const initial = await manager.load();
@@ -229,7 +228,7 @@ test('admin config pending restart writes share override lock without deadlock',
 });
 
 test('admin config accumulates restart markers across sequential restart-required edits', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-restart-merge-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-restart-merge-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   await manager.writeOverrides({ PORT: '3008' });
@@ -242,7 +241,7 @@ test('admin config accumulates restart markers across sequential restart-require
 });
 
 test('admin config legacy pending restart migration does not deadlock under locked clear', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-legacy-lock-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-legacy-lock-'));
   const pendingRestartFile = path.join(dir, 'pending-restart.json');
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir, pendingRestartFile });
   await manager.ensureStorageDir();
@@ -255,7 +254,7 @@ test('admin config legacy pending restart migration does not deadlock under lock
 });
 
 test('admin config clears non-port pending restart after successful process restart', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-non-port-restart-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-non-port-restart-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   await manager.writePendingRestart({ keys: ['JOB_LOG_MAX_BYTES', 'RETENTION_INTERVAL_HOURS'], sinceRevision: 4, createdAt: '2026-01-01T00:00:00.000Z' });
@@ -268,7 +267,7 @@ test('admin config clears non-port pending restart after successful process rest
 });
 
 test('admin config audit compaction shares audit writer lock', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-audit-lock-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-audit-lock-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const auditFile = path.join(dir, 'audit', 'config-audit.jsonl');
@@ -296,7 +295,7 @@ test('admin config audit compaction shares audit writer lock', async () => {
 });
 
 test('admin config audit write failure prevents persisting editor overrides', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const auditFile = path.join(dir, 'audit', 'config-audit.jsonl');
   await fs.mkdir(auditFile, { recursive: true });
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir, auditFile });
@@ -315,7 +314,7 @@ test('admin config audit write failure prevents persisting editor overrides', as
 });
 
 test('admin config audit retention compacts JSONL by event timestamp inside a file', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const auditFile = path.join(dir, 'audit', 'config-audit.jsonl');
@@ -333,7 +332,7 @@ test('admin config audit retention compacts JSONL by event timestamp inside a fi
 });
 
 test('admin retention compacts config audit JSONL by event timestamp, not file mtime', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-audit-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-audit-'));
   const store = new JobEventStore({ adminDir: dir });
   const auditFile = path.join(dir, 'audit', 'config-audit.jsonl');
   await fs.mkdir(path.dirname(auditFile), { recursive: true });
@@ -353,7 +352,7 @@ test('admin retention compacts config audit JSONL by event timestamp, not file m
 });
 
 test('admin config editor exposes one admin password row and canonical admin data dir', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({
     env: { ...env, ADMIN_PASSWORD: 'a-secure-admin-password', ADMIN_DATA_DIR: dir },
     dataDir: dir,
@@ -373,7 +372,6 @@ test('admin config editor exposes one admin password row and canonical admin dat
 
   const configHtml = renderConfigPage({ csrfToken: 'csrf', config: state.summary, adminRoot: dir, section: 'admin' });
   assert.equal((configHtml.match(/<code>ADMIN_PASSWORD<\/code>/g) ?? []).length, 1);
-  assert.equal((configHtml.match(/<code>ADMIN_STORAGE_DIR<\/code>/g) ?? []).length, 0);
   assert.match(configHtml, /dashboard enabled/);
 
   assert.equal(state.summary.values.adminEnabled.value, true);
@@ -384,11 +382,10 @@ test('admin config editor exposes one admin password row and canonical admin dat
   const adminDataDirFields = state.summary.fields.filter(field => field.name === 'adminDataDir');
   assert.equal(adminDataDirFields.length, 1);
   assert.equal(adminDataDirFields[0].envKey, 'ADMIN_DATA_DIR');
-  assert.equal(state.summary.fields.find(field => field.name === 'adminStorageDir'), undefined);
 });
 
 test('admin config editor groups fields and renders searchable sections', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({
     env: { ...env, ADMIN_PASSWORD: 'a-secure-admin-password', ADMIN_DATA_DIR: dir },
     dataDir: dir,
@@ -433,17 +430,17 @@ test('admin config editor groups fields and renders searchable sections', async 
   assert.equal((serviceHtml.match(/href="\/admin\/config\?section=/g) ?? []).length, 7);
 });
 
-test('admin config editor exposes legacy trigger phrase and startup-fixed fields', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+test('admin config editor exposes canonical trigger phrases and startup-fixed fields', async () => {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.ensureStorageDir();
   const state = await manager.load();
-  const triggerPhraseFields = state.summary.fields.filter(field => field.envKey === 'BOT_TRIGGER_PHRASE');
+  const triggerPhraseFields = state.summary.fields.filter(field => field.envKey === 'BOT_TRIGGER_PHRASES');
   assert.equal(triggerPhraseFields.length, 1);
   const [triggerPhraseField] = triggerPhraseFields;
 
   assert.equal(triggerPhraseField.editable, true);
-  assert.equal(triggerPhraseField.effectiveValue, '/juya review');
+  assert.deepEqual(triggerPhraseField.effectiveValue, ['/juya review']);
   for (const envKey of ['JOB_LOG_MAX_BYTES', 'RETENTION_INTERVAL_HOURS']) {
     const fieldRows = state.summary.fields.filter(field => field.envKey === envKey);
     assert.equal(fieldRows.length, 1);
@@ -477,7 +474,7 @@ test('admin router stays hidden when disabled and serves dashboard after login',
 
   const dashboard = await router.route({ method: 'GET', url: '/admin/', headers: { host: 'juya.011070.xyz', cookie } });
   assert.equal(dashboard.status, 200);
-  assert.match(dashboard.body, /Open Code Review Admin/);
+  assert.match(dashboard.body, /Status · Juya Console/);
 });
 
 test('admin router uses configured session TTL, cookie security, flash, and security headers', async () => {
@@ -621,7 +618,7 @@ test('admin POST origin must match protocol host and port', async () => {
 });
 
 test('admin queue persists job history and replay marks active jobs interrupted', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-jobs-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-jobs-'));
   const store = new JobEventStore({ adminDir: dir });
   const queue = new AdminJobQueue({
     store,
@@ -643,7 +640,7 @@ test('admin queue persists job history and replay marks active jobs interrupted'
 });
 
 test('job completed events reject active statuses', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-terminal-status-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-terminal-status-'));
   const store = new JobEventStore({ adminDir: dir });
   const jobId = cryptoRandomUuid();
   await store.append(createJobEvent({ type: 'job.queued', jobId, data: { repository: 'alice/repo', pullNumber: 1 } }));
@@ -700,7 +697,7 @@ test('queued jobs use latest start-time config snapshot', async () => {
 });
 
 test('shutdown persists interrupted active job state', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-interrupted-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-interrupted-'));
   const store = new JobEventStore({ adminDir: dir });
   let started;
   const startedPromise = new Promise(resolve => { started = resolve; });
@@ -724,7 +721,7 @@ test('shutdown persists interrupted active job state', async () => {
 });
 
 test('admin runtime interrupts active replayed jobs and refreshes history', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-runtime-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-runtime-'));
   const store = new JobEventStore({ adminDir: dir });
   const activeJob = createJobEvent({ type: 'job.queued', jobId: cryptoRandomUuid(), data: { repository: 'alice/repo', pullNumber: 2 } });
   await store.append(activeJob);
@@ -740,7 +737,7 @@ test('admin runtime interrupts active replayed jobs and refreshes history', asyn
 });
 
 test('admin runtime does not double count persisted active jobs and live queue', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-runtime-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-runtime-'));
   const store = new JobEventStore({ adminDir: dir });
   await store.append(createJobEvent({ type: 'job.queued', jobId: cryptoRandomUuid(), data: { repository: 'alice/repo', pullNumber: 2 } }));
   const runtime = new AdminRuntime({ eventStore: store, queue: { snapshot: () => ({ running: null, queuedCount: 1, queued: [] }) } });
@@ -750,7 +747,7 @@ test('admin runtime does not double count persisted active jobs and live queue',
 });
 
 test('config manager writes port override and restart marker in one state file', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.setRawOverride('PORT', '3008');
   const rawState = JSON.parse(await fs.readFile(path.join(dir, 'config-overrides.json'), 'utf8'));
@@ -761,7 +758,7 @@ test('config manager writes port override and restart marker in one state file',
 });
 
 test('config manager migrates and clears legacy pending restart marker after matching bind', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-config-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-config-'));
   const manager = new ConfigManager({ env: { ...env, ADMIN_DATA_DIR: dir }, dataDir: dir });
   await manager.writePendingRestart({ keys: ['PORT'], sinceRevision: 4, createdAt: '2026-01-01T00:00:00.000Z' });
   assert.equal(await fileExists(path.join(dir, 'pending-restart.json')), false);
@@ -786,7 +783,7 @@ test('admin repository formatter renders object full name', () => {
 });
 
 test('failed review results persist as failed events with failure kind', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-failed-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-failed-'));
   const store = new JobEventStore({ adminDir: dir });
   const queue = new AdminJobQueue({
     store,
@@ -804,7 +801,7 @@ test('failed review results persist as failed events with failure kind', async (
 
 
 test('job event store serializes concurrent appends and reports corrupt middle lines without losing truncated tails', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-events-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-events-'));
   const store = new JobEventStore({ adminDir: dir });
   const ids = Array.from({ length: 12 }, () => cryptoRandomUuid());
 
@@ -833,7 +830,7 @@ test('job event store serializes concurrent appends and reports corrupt middle l
 });
 
 test('job event compaction preserves active jobs and structured terminal failure outcome', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-compact-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-compact-'));
   const store = new JobEventStore({ adminDir: dir });
   const activeId = cryptoRandomUuid();
   const failedId = cryptoRandomUuid();
@@ -856,7 +853,7 @@ test('job event compaction preserves active jobs and structured terminal failure
 });
 
 test('job event compaction drops expired terminal jobs while preserving active and retained terminal jobs', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-compact-retention-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-compact-retention-'));
   const store = new JobEventStore({ adminDir: dir });
   const oldId = cryptoRandomUuid();
   const retainedId = cryptoRandomUuid();
@@ -887,7 +884,7 @@ test('job event compaction drops expired terminal jobs while preserving active a
 });
 
 test('job log events omit log payloads from events file', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-log-events-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-log-events-'));
   const store = new JobEventStore({ adminDir: dir });
   const jobId = cryptoRandomUuid();
   const largeLog = 'x'.repeat(64 * 1024);
@@ -902,7 +899,7 @@ test('job log events omit log payloads from events file', async () => {
 });
 
 test('bounded job logger enforces byte cap with one terminal truncation marker', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-logs-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-logs-'));
   const jobId = cryptoRandomUuid();
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 650, maxMessageLength: 200, maxEntries: 100, compactInterval: 1 });
 
@@ -919,7 +916,7 @@ test('bounded job logger enforces byte cap with one terminal truncation marker',
 });
 
 test('bounded job logger flushes pending writes and recovers after write failure', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-logger-flush-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-logger-flush-'));
   const jobId = cryptoRandomUuid();
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 4096 });
 
@@ -928,7 +925,7 @@ test('bounded job logger flushes pending writes and recovers after write failure
   await pending;
   assert.deepEqual((await logger.read(jobId)).entries.map(entry => entry.message), ['first pending write']);
 
-  const blockedDir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-logger-fail-'));
+  const blockedDir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-logger-fail-'));
   const logsPath = path.join(blockedDir, 'logs-file');
   await fs.writeFile(logsPath, 'not a directory', 'utf8');
   const failingLogger = new BoundedJobLogger({ logsDir: logsPath, maxBytes: 4096 });
@@ -960,7 +957,7 @@ test('admin queue shutdown waits for logger flush and records flush timeout diag
 });
 
 test('admin retention deletes expired and orphan logs, keeps active logs, preserves retained jobs, and writes daily stats', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-'));
   const store = new JobEventStore({ adminDir: dir });
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 4096 });
   const activeId = cryptoRandomUuid();
@@ -997,7 +994,7 @@ test('admin retention deletes expired and orphan logs, keeps active logs, preser
 });
 
 test('admin retention removes expired terminal jobs from compacted event history', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-history-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-history-'));
   const store = new JobEventStore({ adminDir: dir });
   const oldId = cryptoRandomUuid();
   const retainedId = cryptoRandomUuid();
@@ -1025,7 +1022,7 @@ test('admin retention removes expired terminal jobs from compacted event history
 });
 
 test('admin retention keeps expired terminal jobs when stats aggregation fails', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-stats-failure-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-stats-failure-'));
   const store = new JobEventStore({ adminDir: dir });
   const oldId = cryptoRandomUuid();
   await store.append(createJobEvent({ type: 'job.queued', jobId: oldId, timestamp: '2026-01-01T00:00:00.000Z', data: { repository: 'alice/old-retention', pullNumber: 1 } }));
@@ -1049,7 +1046,7 @@ test('admin retention keeps expired terminal jobs when stats aggregation fails',
 });
 
 test('admin retention keeps fresh orphan logs and aggregate stats under soft cap', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-retention-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-retention-'));
   const store = new JobEventStore({ adminDir: dir });
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 4096 });
   const orphanId = cryptoRandomUuid();
@@ -1099,7 +1096,7 @@ test('job stats compute windowed rates percentiles comments failure kinds repos 
 });
 
 test('admin dashboard merges persisted daily stats after job retention', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-dashboard-stats-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-dashboard-stats-'));
   const store = new JobEventStore({ adminDir: dir });
   await fs.mkdir(path.join(dir, 'stats'), { recursive: true });
   await fs.writeFile(path.join(dir, 'stats', 'daily-stats.jsonl'), `${JSON.stringify({ day: '2026-01-01', jobs: 3, succeeded: 2, failed: 1, successRate: 2 / 3, commentsGeneratedTotal: 7, commentsPostedTotal: 5 })}\n`, 'utf8');
@@ -1113,7 +1110,7 @@ test('admin dashboard merges persisted daily stats after job retention', async (
 });
 
 test('job event compaction preserves progress phase timeline', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-compact-progress-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-compact-progress-'));
   const store = new JobEventStore({ adminDir: dir });
   const jobId = cryptoRandomUuid();
   await store.append(createJobEvent({ type: 'job.queued', jobId, timestamp: '2026-01-01T00:00:00.000Z', data: { repository: 'alice/repo', pullNumber: 1 } }));
@@ -1131,7 +1128,7 @@ test('job event compaction preserves progress phase timeline', async () => {
 
 
 test('admin retention soft cap records early deletion and last run state', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-soft-cap-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-soft-cap-'));
   const store = new JobEventStore({ adminDir: dir });
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 4096 });
   const jobId = cryptoRandomUuid();
@@ -1153,7 +1150,7 @@ test('admin retention soft cap records early deletion and last run state', async
 });
 
 test('admin retention soft cap deletes every eligible log and reports unmet target', async () => {
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'ocr-admin-soft-cap-unmet-'));
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'juya-console-soft-cap-unmet-'));
   const store = new JobEventStore({ adminDir: dir });
   const logger = new BoundedJobLogger({ adminDir: dir, maxBytes: 20_000 });
   const jobIds = [cryptoRandomUuid(), cryptoRandomUuid()];
@@ -1267,6 +1264,7 @@ test('core health route survives admin runtime failures', async () => {
     const health = await requestJson(server, 'GET', '/health');
     assert.equal(health.status, 200);
     assert.equal(health.body.ok, true);
+    assert.equal(health.body.service, 'juya-review-bot');
     const loginBody = new URLSearchParams({ password: 'a-secure-admin-password' }).toString();
     const login = await requestText(server, 'POST', '/admin/login', { host: 'juya.011070.xyz', origin: 'https://juya.011070.xyz', 'content-type': 'application/x-www-form-urlencoded', 'content-length': String(Buffer.byteLength(loginBody)) }, loginBody);
     assert.equal(login.status, 303);
