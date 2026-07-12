@@ -24,14 +24,25 @@ jobs:
       - name: Trust workspace
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-      - name: Apply responsive Metrics refactor
+      - name: Prepare responsive Metrics branch
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         shell: bash
         run: |
           git fetch origin agent/daily-trend-chart
           git checkout -B agent/daily-trend-chart origin/agent/daily-trend-chart
-          sed -i "/is not unique/d" .github/scripts/pr3-responsive-metrics.js
-          node .github/scripts/pr3-responsive-metrics.js
+
+      - name: Patch Metrics layout and routing
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node .github/scripts/pr3-patch-layout.js
+
+      - name: Patch legacy Metrics tests
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node .github/scripts/pr3-patch-tests.js
+
+      - name: Commit responsive Metrics refactor
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        shell: bash
+        run: |
           node --check src/admin/templates.js
           node --check src/admin/router.js
           node --check test/admin-dashboard-status.test.js
