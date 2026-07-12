@@ -273,62 +273,6 @@ ${Array.isArray(diagnostics) && diagnostics.length ? `<div class="sect"><div cla
   return renderLayout({ title: 'Status', active: 'dashboard', csrfToken, body, titleKey: 'page_dashboard', cspNonce });
 }
 
-export function renderMetricsPage({ csrfToken, stats = null, metrics = null, cspNonce = '' } = {}) {
-  const mstats = stats || metrics || {};
-  const total = mstats.total || {};
-  const windows = mstats.windows || {};
-
-  const metricTiles = [
-    { k: 'Duration p50', v: formatDuration(total.durationP50Ms), key: 'm_dur_p50' },
-    { k: 'Duration p95', v: formatDuration(total.durationP95Ms), key: 'm_dur_p95' },
-    { k: 'Queue wait p50', v: formatDuration(total.queueWaitP50Ms), key: 'm_qw_p50' },
-    { k: 'Queue wait p95', v: formatDuration(total.queueWaitP95Ms), key: 'm_qw_p95' },
-    { k: 'Avg comments generated', v: numberOrDash(total.averageCommentsGenerated ?? total.avgCommentsGenerated), key: 'm_avg_gen' },
-    { k: 'Avg comments posted', v: numberOrDash(total.averageCommentsPosted ?? total.avgCommentsPosted), key: 'm_avg_post' },
-    { k: 'Stale', v: numberOrDash(total.stale), key: 'm_stale' },
-    { k: 'Skipped', v: numberOrDash(total.skipped), key: 'm_skipped' },
-    { k: 'Interrupted', v: numberOrDash(total.interrupted), key: 'm_interrupted' },
-  ].map((t) => `<div class="dmetric"><div class="k" data-i18n="${t.key}">${escapeHtml(t.k)}</div><div class="v">${safeDisplay(t.v)}</div></div>`).join('');
-
-  const failureKinds = Object.entries(total.failureKinds || {});
-  const failureHtml = failureKinds.length
-    ? `<div class="table-scroll"><table class="gh-table metrics-table metrics-table--compact"><thead><tr><th data-i18n="m_fail_class">Failure classification</th><th data-i18n="th_jobs">Jobs</th></tr></thead><tbody>${failureKinds.map(([kind, count]) => `<tr><th scope="row">${safeDisplay(kind)}</th><td>${safeDisplay(count)}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_none">None.</p>';
-
-  const repos = Object.entries(total.repositories || {});
-  const repoHtml = repos.length
-    ? `<div class="table-scroll"><table class="gh-table metrics-table metrics-table--compact"><thead><tr><th data-i18n="th_repository">Repository</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th></tr></thead><tbody>${repos.map(([name, info]) => `<tr><th scope="row" title="${escapeAttribute(name)}">${safeDisplay(name)}</th><td>${safeDisplay(info.jobs)}</td><td>${safeDisplay(formatPercent(info.successRate))}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_none">None.</p>';
-
-  const daily = Array.isArray(mstats.dailyTrend) ? mstats.dailyTrend : [];
-  const dailyHtml = daily.length
-    ? `<div class="table-scroll"><table class="gh-table metrics-table"><thead><tr><th data-i18n="th_day">Day</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_avg_gen">Avg comments generated</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${daily.map((day) => `<tr><th scope="row">${safeDisplay(day.day)}</th><td>${safeDisplay(numberOrDash(day.jobs))}</td><td>${safeDisplay(formatPercent(day.successRate))}</td><td>${safeDisplay(numberOrDash(day.averageCommentsGenerated))}</td><td>${safeDisplay(numberOrDash(day.averageCommentsPosted))}</td><td>${safeDisplay(numberOrDash(day.stale))}</td><td>${safeDisplay(numberOrDash(day.skipped))}</td><td>${safeDisplay(numberOrDash(day.interrupted))}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_daily">No daily trend data.</p>';
-
-  const windowRows = ['24h', '7d', '30d'].map((name) => {
-    const bucket = windows[name] || {};
-    return `<tr><th scope="row">${safeDisplay(name)}</th><td>${safeDisplay(numberOrDash(bucket.jobs))}</td><td>${safeDisplay(formatPercent(bucket.successRate))}</td><td>${safeDisplay(formatDuration(bucket.durationP50Ms))}</td><td>${safeDisplay(formatDuration(bucket.durationP95Ms))}</td><td>${safeDisplay(formatDuration(bucket.queueWaitP50Ms))}</td><td>${safeDisplay(formatDuration(bucket.queueWaitP95Ms))}</td><td>${safeDisplay(numberOrDash(bucket.averageCommentsGenerated))}</td><td>${safeDisplay(numberOrDash(bucket.averageCommentsPosted))}</td></tr>`;
-  }).join('');
-
-  const body = `<div class="metrics-page">
-<p class="page-desc muted" data-i18n="metrics_page_desc">Latency, comment volume, failure classification, and repository success trends.</p>
-<div class="metric-row">${metricTiles}</div>
-<div class="box">
-  <div class="table-scroll"><table class="gh-table metrics-table"><thead><tr><th data-i18n="th_window">Window</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_dur_p50">Duration p50</th><th data-i18n="m_dur_p95">Duration p95</th><th data-i18n="m_qw_p50">Queue wait p50</th><th data-i18n="m_qw_p95">Queue wait p95</th><th data-i18n="m_avg_gen">Avg comments generated</th><th data-i18n="m_avg_post">Avg comments posted</th></tr></thead><tbody>${windowRows}</tbody></table></div>
-</div>
-<div class="box">
-  ${failureHtml}
-</div>
-<div class="box">
-  ${repoHtml}
-</div>
-<div class="box">
-  ${dailyHtml}
-</div>
-</div>`;
-  return renderLayout({ title: 'Metrics', active: 'metrics', csrfToken, body, titleKey: 'page_metrics', cspNonce });
-}
-
 export function renderJobsPage({ csrfToken, jobs = [], filters = {}, pagination = null, validationMessages = [], filter = '', cspNonce = '' } = {}) {
   const normalizedFilters = { ...filters };
   if (filter && !normalizedFilters.diagnosticId) normalizedFilters.diagnosticId = filter;

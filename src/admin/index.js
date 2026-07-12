@@ -53,7 +53,6 @@ export {
   redactSecretValue,
   renderConfigPage,
   renderDashboardPage,
-  renderMetricsPage,
   renderDiagnosticsList,
   renderErrorPage,
   renderJobDetailPage,
@@ -63,6 +62,13 @@ export {
   renderLoginPage,
   safeText,
 } from './templates.js';
+export {
+  DEFAULT_METRICS_WINDOW,
+  METRICS_WINDOWS,
+  buildMetricsView,
+  normalizeMetricsWindow,
+} from './metrics.js';
+export { renderMetricsPage } from './metrics-page.js';
 export {
   AdminRouter,
   clientRateLimitKey,

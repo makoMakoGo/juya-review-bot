@@ -9,8 +9,10 @@ import {
   clearSessionCookie,
   clearCsrfCookie,
 } from './session.js';
+import { renderMetricsPage } from './metrics-page.js';
+import { normalizeMetricsWindow } from './metrics.js';
 import { forbidden, htmlResponse, methodNotAllowed, notFound, redirect, textResponse } from './security.js';
-import { CONFIG_GROUP_IDS, renderConfigPage, renderDashboardPage, renderJobDetailPage, renderJobsPage, renderLoginPage, renderMetricsPage } from './templates.js';
+import { CONFIG_GROUP_IDS, renderConfigPage, renderDashboardPage, renderJobDetailPage, renderJobsPage, renderLoginPage } from './templates.js';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -85,8 +87,14 @@ export class AdminRouter {
 
     if (normalized.pathname === '/admin/metrics') {
       if (normalized.method !== 'GET') return methodNotAllowed(['GET']);
+      let window;
+      try {
+        window = normalizeMetricsWindow(normalized.query.get('window'));
+      } catch (error) {
+        return textResponse(error.message, { status: 400 });
+      }
       const dashboard = await this.loadDashboard({ request: normalized, session });
-      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, metrics: dashboard.metrics }));
+      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window }));
     }
 
     if (normalized.pathname === '/admin/jobs') {
@@ -361,12 +369,12 @@ function getHeader(headers, name) {
   return null;
 }
 
-
 function configSectionPath(section) {
   const id = String(section ?? '').trim();
   if (CONFIG_GROUP_IDS.includes(id)) return `/admin/config?section=${encodeURIComponent(id)}`;
   return '/admin/config';
 }
+
 function getFormString(form, name) {
   const value = form.get(name);
   if (Array.isArray(value)) return value[0] ?? '';
