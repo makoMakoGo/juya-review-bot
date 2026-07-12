@@ -1,6 +1,6 @@
-const CHART_WIDTH = 720;
-const CHART_HEIGHT = 268;
-const PLOT = Object.freeze({ left: 54, right: 56, top: 42, bottom: 38 });
+const CHART_WIDTH = 760;
+const CHART_HEIGHT = 304;
+const PLOT = Object.freeze({ left: 54, right: 58, top: 52, bottom: 42 });
 const MAX_CHART_POINTS = 31;
 const JOB_TICK_COUNT = 5;
 const SUCCESS_TICKS = Object.freeze([0, 0.25, 0.5, 0.75, 1]);
@@ -38,6 +38,8 @@ export function buildMetricsTrendChart(rows, options = {}) {
         : coordinate(PLOT.top + plotHeight - row.successRate * plotHeight),
     };
   });
+  const hasSuccessSeries = points.some(point => point.successY != null);
+  const plotBottom = PLOT.top + plotHeight;
 
   return {
     renderable: true,
@@ -46,16 +48,21 @@ export function buildMetricsTrendChart(rows, options = {}) {
     plot: PLOT,
     plotWidth,
     plotHeight,
+    plotBottom,
     sourceCount: normalized.length,
     jobsMax,
     jobsTicks: buildJobsTicks(jobsMax, plotHeight),
-    successTicks: SUCCESS_TICKS.map(value => ({
-      value,
-      y: coordinate(PLOT.top + plotHeight - value * plotHeight),
-    })),
+    successTicks: hasSuccessSeries
+      ? SUCCESS_TICKS.map(value => ({
+        value,
+        y: coordinate(PLOT.top + plotHeight - value * plotHeight),
+      }))
+      : [],
     xTicks: selectXTicks(points),
     points,
+    hasSuccessSeries,
     jobsPath: linePath(points, point => point.jobsY),
+    jobsAreaPath: areaPath(points, plotBottom, point => point.jobsY),
     successPath: linePath(points, point => point.successY),
   };
 }
@@ -64,29 +71,36 @@ export function renderMetricsTrendChart(rows, options = {}) {
   const chart = buildMetricsTrendChart(rows, options);
   if (!chart.renderable) return '';
 
-  const plotBottom = chart.plot.top + chart.plotHeight;
   const plotRight = chart.plot.left + chart.plotWidth;
-  const grid = chart.jobsTicks.map(tick => `<line x1="${chart.plot.left}" y1="${tick.y}" x2="${plotRight}" y2="${tick.y}" stroke="var(--border)" stroke-width="1" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left - 10}" y="${tick.y + 4}" text-anchor="end" fill="var(--fg-muted)" font-size="11">${formatCompactNumber(tick.value)}</text>`).join('');
+  const grid = chart.jobsTicks.map((tick, index) => {
+    const isBoundary = index === 0 || index === chart.jobsTicks.length - 1;
+    return `<line x1="${chart.plot.left}" y1="${tick.y}" x2="${plotRight}" y2="${tick.y}" stroke="var(--border)" stroke-width="1"${isBoundary ? '' : ' stroke-dasharray="3 5"'} opacity="${isBoundary ? '0.95' : '0.72'}" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left - 10}" y="${tick.y + 4}" text-anchor="end" fill="var(--fg-muted)" font-size="11">${formatCompactNumber(tick.value)}</text>`;
+  }).join('');
   const successLabels = chart.successTicks.map(tick => `<text x="${plotRight + 10}" y="${tick.y + 4}" fill="var(--fg-muted)" font-size="11">${Math.round(tick.value * 100)}%</text>`).join('');
-  const xLabels = chart.xTicks.map(tick => `<text x="${tick.x}" y="${plotBottom + 24}" text-anchor="middle" fill="var(--fg-muted)" font-size="11">${tick.day.slice(5)}</text>`).join('');
-  const jobsPoints = chart.points.map(point => `<circle cx="${point.x}" cy="${point.jobsY}" r="3" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${point.jobs} jobs</title></circle>`).join('');
-  const successPoints = chart.points.filter(point => point.successY != null).map(point => `<circle cx="${point.x}" cy="${point.successY}" r="3" fill="var(--bg)" stroke="var(--success)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${formatPercent(point.successRate)} success</title></circle>`).join('');
+  const xLabels = chart.xTicks.map(tick => `<text x="${tick.x}" y="${chart.plotBottom + 25}" text-anchor="middle" fill="var(--fg-muted)" font-size="11">${tick.day.slice(5)}</text>`).join('');
+  const jobsPoints = chart.points.map(point => `<circle cx="${point.x}" cy="${point.jobsY}" r="3.25" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${point.jobs} jobs</title></circle>`).join('');
+  const successPoints = chart.points.filter(point => point.successY != null).map(point => `<circle cx="${point.x}" cy="${point.successY}" r="3.25" fill="var(--bg)" stroke="var(--success)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${formatPercent(point.successRate)} success</title></circle>`).join('');
   const sampleDescription = chart.sourceCount > chart.points.length
     ? `Showing ${chart.points.length} sampled days from ${chart.sourceCount}; exact values follow in the table.`
     : 'Exact values follow in the table.';
+  const successLegend = chart.hasSuccessSeries
+    ? `<line x1="${chart.plot.left + 96}" y1="20" x2="${chart.plot.left + 118}" y2="20" stroke="var(--success)" stroke-width="2.25" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 126}" y="24" fill="var(--fg-muted)" font-size="12" data-i18n="th_success_rate">Success rate</text>`
+    : '';
 
-  return `<svg class="metrics-trend-chart" viewBox="0 0 ${chart.width} ${chart.height}" width="720" height="268" style="display:block;width:100%;height:auto" role="img" aria-labelledby="metrics-trend-title metrics-trend-desc" preserveAspectRatio="xMidYMid meet">
+  return `<svg class="metrics-trend-chart" viewBox="0 0 ${chart.width} ${chart.height}" style="display:block;width:100%;height:auto;min-width:560px" role="img" aria-labelledby="metrics-trend-title metrics-trend-desc" preserveAspectRatio="xMidYMid meet" focusable="false">
 <title id="metrics-trend-title">Daily jobs and success rate</title>
 <desc id="metrics-trend-desc">${chart.points[0].day} through ${chart.points.at(-1).day}. ${sampleDescription}</desc>
+<rect x="${chart.plot.left}" y="${chart.plot.top}" width="${chart.plotWidth}" height="${chart.plotHeight}" rx="6" fill="var(--bg)" stroke="var(--border)" vector-effect="non-scaling-stroke" aria-hidden="true"/>
 <g aria-hidden="true" font-family="var(--font-sans)">
-  <line x1="${chart.plot.left}" y1="18" x2="${chart.plot.left + 20}" y2="18" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 27}" y="22" fill="var(--fg-muted)" font-size="12" data-i18n="th_jobs">Jobs</text>
-  <line x1="${chart.plot.left + 96}" y1="18" x2="${chart.plot.left + 116}" y2="18" stroke="var(--success)" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 123}" y="22" fill="var(--fg-muted)" font-size="12" data-i18n="th_success_rate">Success rate</text>
+  <line x1="${chart.plot.left}" y1="20" x2="${chart.plot.left + 22}" y2="20" stroke="var(--accent)" stroke-width="2.25" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 30}" y="24" fill="var(--fg-muted)" font-size="12" data-i18n="th_jobs">Jobs</text>
+  ${successLegend}
   ${grid}
   ${successLabels}
   ${xLabels}
 </g>
-<path d="${chart.jobsPath}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>
-${chart.successPath ? `<path d="${chart.successPath}" fill="none" stroke="var(--success)" stroke-width="2" stroke-dasharray="5 4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>` : ''}
+<path d="${chart.jobsAreaPath}" fill="var(--accent-subtle)" stroke="none" aria-hidden="true"/>
+<path d="${chart.jobsPath}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>
+${chart.successPath ? `<path d="${chart.successPath}" fill="none" stroke="var(--success)" stroke-width="2.25" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>` : ''}
 ${jobsPoints}${successPoints}
 </svg>`;
 }
@@ -157,6 +171,13 @@ function linePath(points, selectY) {
     segmentOpen = true;
   }
   return path;
+}
+
+function areaPath(points, baseline, selectY) {
+  if (points.length === 0) return '';
+  const line = linePath(points, selectY);
+  if (!line) return '';
+  return `M ${points[0].x} ${baseline} L ${points[0].x} ${selectY(points[0])}${line.slice(line.indexOf(' L'))} L ${points.at(-1).x} ${baseline} Z`;
 }
 
 function niceCeiling(value) {
