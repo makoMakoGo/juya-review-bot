@@ -1,9 +1,9 @@
-const CHART_WIDTH = 760;
-const CHART_HEIGHT = 304;
-const PLOT = Object.freeze({ left: 54, right: 58, top: 52, bottom: 42 });
+const CHART_WIDTH = 800;
+const CHART_HEIGHT = 320;
+const PLOT = Object.freeze({ left: 56, right: 58, top: 58, bottom: 44 });
 const MAX_CHART_POINTS = 31;
-const JOB_TICK_COUNT = 5;
-const SUCCESS_TICKS = Object.freeze([0, 0.25, 0.5, 0.75, 1]);
+const JOB_TICK_COUNT = 4;
+const SUCCESS_TICKS = Object.freeze([0, 0.5, 1]);
 
 export function buildMetricsTrendChart(rows, options = {}) {
   if (!Array.isArray(rows)) throw new TypeError('daily trend rows must be an array');
@@ -73,34 +73,51 @@ export function renderMetricsTrendChart(rows, options = {}) {
 
   const plotRight = chart.plot.left + chart.plotWidth;
   const grid = chart.jobsTicks.map((tick, index) => {
-    const isBoundary = index === 0 || index === chart.jobsTicks.length - 1;
-    return `<line x1="${chart.plot.left}" y1="${tick.y}" x2="${plotRight}" y2="${tick.y}" stroke="var(--border)" stroke-width="1"${isBoundary ? '' : ' stroke-dasharray="3 5"'} opacity="${isBoundary ? '0.95' : '0.72'}" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left - 10}" y="${tick.y + 4}" text-anchor="end" fill="var(--fg-muted)" font-size="11">${formatCompactNumber(tick.value)}</text>`;
+    const edge = index === 0 || index === chart.jobsTicks.length - 1;
+    const secondary = edge ? '' : ' metric-chart-secondary';
+    return `<g class="metric-chart-grid${secondary}"><line x1="${chart.plot.left}" y1="${tick.y}" x2="${plotRight}" y2="${tick.y}"/><text x="${chart.plot.left - 12}" y="${tick.y + 4}" text-anchor="end">${formatCompactNumber(tick.value)}</text></g>`;
   }).join('');
-  const successLabels = chart.successTicks.map(tick => `<text x="${plotRight + 10}" y="${tick.y + 4}" fill="var(--fg-muted)" font-size="11">${Math.round(tick.value * 100)}%</text>`).join('');
-  const xLabels = chart.xTicks.map(tick => `<text x="${tick.x}" y="${chart.plotBottom + 25}" text-anchor="middle" fill="var(--fg-muted)" font-size="11">${tick.day.slice(5)}</text>`).join('');
-  const jobsPoints = chart.points.map(point => `<circle cx="${point.x}" cy="${point.jobsY}" r="3.25" fill="var(--bg)" stroke="var(--accent)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${point.jobs} jobs</title></circle>`).join('');
-  const successPoints = chart.points.filter(point => point.successY != null).map(point => `<circle cx="${point.x}" cy="${point.successY}" r="3.25" fill="var(--bg)" stroke="var(--success)" stroke-width="2" vector-effect="non-scaling-stroke"><title>${point.day}: ${formatPercent(point.successRate)} success</title></circle>`).join('');
+  const successLabels = chart.successTicks.map((tick, index) => {
+    const secondary = index === 1 ? ' metric-chart-secondary' : '';
+    return `<text class="metric-chart-success-label${secondary}" x="${plotRight + 12}" y="${tick.y + 4}">${Math.round(tick.value * 100)}%</text>`;
+  }).join('');
+  const xLabels = chart.xTicks.map((tick, index) => {
+    const secondary = index > 0 && index < chart.xTicks.length - 1 ? ' metric-chart-secondary' : '';
+    return `<text class="metric-chart-x-label${secondary}" x="${tick.x}" y="${chart.plotBottom + 28}" text-anchor="middle">${tick.day.slice(5)}</text>`;
+  }).join('');
+  const jobsPoints = chart.points.map(point => `<circle class="metric-chart-point metric-chart-point-jobs" cx="${point.x}" cy="${point.jobsY}" r="3.5"><title>${point.day}: ${point.jobs} jobs</title></circle>`).join('');
+  const successPoints = chart.points.filter(point => point.successY != null).map(point => `<circle class="metric-chart-point metric-chart-point-success" cx="${point.x}" cy="${point.successY}" r="3.5"><title>${point.day}: ${formatPercent(point.successRate)} success</title></circle>`).join('');
   const sampleDescription = chart.sourceCount > chart.points.length
-    ? `Showing ${chart.points.length} sampled days from ${chart.sourceCount}; exact values follow in the table.`
-    : 'Exact values follow in the table.';
+    ? `Showing ${chart.points.length} sampled days from ${chart.sourceCount}; exact values are available in Data view.`
+    : 'Exact values are available in Data view.';
   const successLegend = chart.hasSuccessSeries
-    ? `<line x1="${chart.plot.left + 96}" y1="20" x2="${chart.plot.left + 118}" y2="20" stroke="var(--success)" stroke-width="2.25" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 126}" y="24" fill="var(--fg-muted)" font-size="12" data-i18n="th_success_rate">Success rate</text>`
+    ? `<g class="metric-chart-legend-item"><line class="metric-chart-success-line" x1="${chart.plot.left + 112}" y1="22" x2="${chart.plot.left + 136}" y2="22"/><text x="${chart.plot.left + 145}" y="26" data-i18n="th_success_rate">Success rate</text></g>`
     : '';
 
-  return `<svg class="metrics-trend-chart" viewBox="0 0 ${chart.width} ${chart.height}" style="display:block;width:100%;height:auto;min-width:560px" role="img" aria-labelledby="metrics-trend-title metrics-trend-desc" preserveAspectRatio="xMidYMid meet" focusable="false">
+  return `<svg class="metrics-trend-chart" viewBox="0 0 ${chart.width} ${chart.height}" style="display:block;width:100%;height:auto;max-width:100%" role="img" aria-labelledby="metrics-trend-title metrics-trend-desc" preserveAspectRatio="xMidYMid meet" focusable="false">
+<style>
+.metrics-trend-chart text{fill:var(--fg-muted);font-family:var(--font-sans);font-size:12px}
+.metrics-trend-chart .metric-chart-grid line{stroke:var(--border);stroke-width:1;stroke-dasharray:3 6;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-jobs-area{fill:var(--accent-subtle)}
+.metrics-trend-chart .metric-chart-jobs-line{fill:none;stroke:var(--accent);stroke-width:2.25;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-success-line{fill:none;stroke:var(--success);stroke-width:2.25;stroke-dasharray:7 5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-point{fill:var(--bg);stroke-width:2;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-point-jobs{stroke:var(--accent)}
+.metrics-trend-chart .metric-chart-point-success{stroke:var(--success)}
+@media(max-width:640px){.metrics-trend-chart .metric-chart-secondary{display:none}.metrics-trend-chart text{font-size:13px}}
+</style>
 <title id="metrics-trend-title">Daily jobs and success rate</title>
 <desc id="metrics-trend-desc">${chart.points[0].day} through ${chart.points.at(-1).day}. ${sampleDescription}</desc>
-<rect x="${chart.plot.left}" y="${chart.plot.top}" width="${chart.plotWidth}" height="${chart.plotHeight}" rx="6" fill="var(--bg)" stroke="var(--border)" vector-effect="non-scaling-stroke" aria-hidden="true"/>
-<g aria-hidden="true" font-family="var(--font-sans)">
-  <line x1="${chart.plot.left}" y1="20" x2="${chart.plot.left + 22}" y2="20" stroke="var(--accent)" stroke-width="2.25" vector-effect="non-scaling-stroke"/><text x="${chart.plot.left + 30}" y="24" fill="var(--fg-muted)" font-size="12" data-i18n="th_jobs">Jobs</text>
+<g aria-hidden="true">
+  <g class="metric-chart-legend-item"><line class="metric-chart-jobs-line" x1="${chart.plot.left}" y1="22" x2="${chart.plot.left + 24}" y2="22"/><text x="${chart.plot.left + 33}" y="26" data-i18n="th_jobs">Jobs</text></g>
   ${successLegend}
   ${grid}
   ${successLabels}
   ${xLabels}
 </g>
-<path d="${chart.jobsAreaPath}" fill="var(--accent-subtle)" stroke="none" aria-hidden="true"/>
-<path d="${chart.jobsPath}" fill="none" stroke="var(--accent)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>
-${chart.successPath ? `<path d="${chart.successPath}" fill="none" stroke="var(--success)" stroke-width="2.25" stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke" aria-hidden="true"/>` : ''}
+<path class="metric-chart-jobs-area" d="${chart.jobsAreaPath}" aria-hidden="true"/>
+<path class="metric-chart-jobs-line" d="${chart.jobsPath}" aria-hidden="true"/>
+${chart.successPath ? `<path class="metric-chart-success-line" d="${chart.successPath}" aria-hidden="true"/>` : ''}
 ${jobsPoints}${successPoints}
 </svg>`;
 }
@@ -152,7 +169,7 @@ function buildJobsTicks(max, plotHeight) {
 }
 
 function selectXTicks(points) {
-  const count = Math.min(6, points.length);
+  const count = Math.min(5, points.length);
   const indexes = new Set();
   for (let slot = 0; slot < count; slot += 1) indexes.add(Math.round((slot * (points.length - 1)) / (count - 1)));
   return [...indexes].map(index => points[index]);
@@ -175,9 +192,9 @@ function linePath(points, selectY) {
 
 function areaPath(points, baseline, selectY) {
   if (points.length === 0) return '';
-  const line = linePath(points, selectY);
-  if (!line) return '';
-  return `M ${points[0].x} ${baseline} L ${points[0].x} ${selectY(points[0])}${line.slice(line.indexOf(' L'))} L ${points.at(-1).x} ${baseline} Z`;
+  const path = linePath(points, selectY);
+  if (!path) return '';
+  return `${path} L ${points.at(-1).x} ${baseline} L ${points[0].x} ${baseline} Z`;
 }
 
 function niceCeiling(value) {
