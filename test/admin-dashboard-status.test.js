@@ -27,7 +27,7 @@ function emptyReplay(jobs = []) {
   return { jobs, degraded: false, corruptions: [], invalidEvents: [], truncatedTail: null };
 }
 
-test('metrics page renders latency percentiles comments failure repository and daily metrics', () => {
+test('metrics page renders a compact summary, ranked breakdowns, exact daily cards, and comparison', () => {
   const stats = {
     total: {
       jobs: 2,
@@ -58,33 +58,19 @@ test('metrics page renders latency percentiles comments failure repository and d
     ],
   };
 
-  const html = renderMetricsPage({
-    csrfToken: 'csrf',
-    stats,
-    window: 'all',
-  });
-
-  assert.match(html, /Duration p50/);
+  const html = renderMetricsPage({ csrfToken: 'csrf', stats, window: 'all', trend: 'data' });
+  assert.match(html, /class="metrics-summary"/);
+  assert.match(html, /data-i18n="metrics_duration">Duration/);
   assert.match(html, /10m 0s/);
-  assert.match(html, /Duration p95/);
   assert.match(html, /30m 0s/);
-  assert.match(html, /Queue wait p50/);
-  assert.match(html, /5m 0s/);
-  assert.match(html, /Queue wait p95/);
-  assert.match(html, /Avg comments generated/);
-  assert.match(html, /<td>4.5<\/td>/);
-  assert.match(html, /Avg comments posted/);
-  assert.match(html, /<td>2<\/td>/);
-  assert.match(html, /Stale/);
-  assert.match(html, /Skipped/);
-  assert.match(html, /Interrupted/);
-  assert.match(html, /Failure classification/);
+  assert.match(html, /class="metrics-list metrics-failure-list"/);
   assert.match(html, /provider_unavailable/);
-  assert.match(html, /data-i18n="th_repository">Repository</);
-  assert.match(html, /alice\/repo/);
-  assert.match(html, /50%/);
-  assert.match(html, /Daily trend/);
+  assert.ok(html.includes('alice/repo'));
+  assert.match(html, /class="metrics-day-grid"/);
   assert.match(html, /2026-06-01/);
+  assert.match(html, /class="metrics-comparison-grid"/);
+  assert.equal(html.includes('<table'), false);
+  assert.equal(html.includes('class="table-scroll"'), false);
 });
 
 test('service status renders actual listener port separately from configured port', async () => {

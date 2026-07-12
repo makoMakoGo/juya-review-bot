@@ -10,7 +10,7 @@ import {
   clearCsrfCookie,
 } from './session.js';
 import { renderMetricsPage } from './metrics-page.js';
-import { normalizeMetricsWindow } from './metrics.js';
+import { normalizeMetricsTrend, normalizeMetricsWindow } from './metrics.js';
 import { forbidden, htmlResponse, methodNotAllowed, notFound, redirect, textResponse } from './security.js';
 import { CONFIG_GROUP_IDS, renderConfigPage, renderDashboardPage, renderJobDetailPage, renderJobsPage, renderLoginPage } from './templates.js';
 
@@ -87,14 +87,16 @@ export class AdminRouter {
 
     if (normalized.pathname === '/admin/metrics') {
       if (normalized.method !== 'GET') return methodNotAllowed(['GET']);
-      let window;
+      let metricsWindow;
+      let trend;
       try {
-        window = normalizeMetricsWindow(normalized.query.get('window'));
+        metricsWindow = normalizeMetricsWindow(normalized.query.get('window'));
+        trend = normalizeMetricsTrend(normalized.query.get('trend'));
       } catch (error) {
         return textResponse(error.message, { status: 400 });
       }
       const dashboard = await this.loadDashboard({ request: normalized, session });
-      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window }));
+      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window: metricsWindow, trend }));
     }
 
     if (normalized.pathname === '/admin/jobs') {

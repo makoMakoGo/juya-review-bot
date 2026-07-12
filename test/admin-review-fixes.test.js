@@ -971,45 +971,46 @@ test('jobs table compacts long job and diagnostic ids without wrapping strategy'
 });
 
 
-test('metrics repository table keeps numeric columns content-sized and right-aligned', () => {
+test('metrics page uses responsive lists and cards instead of horizontally scrolling tables', () => {
+  const repository = 'makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name';
   const html = renderMetricsPage({
     csrfToken: 'csrf',
     stats: {
       total: {
+        jobs: 4,
+        failed: 2,
+        successRate: 0.5,
         repositories: {
-          'makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name': { jobs: 1, successRate: 1 },
+          [repository]: { jobs: 1, successRate: 1 },
           'alice/monorepo': { jobs: 3, successRate: 0.5 },
         },
         failureKinds: { provider_unavailable: 2 },
       },
       windows: {
-        '24h': { jobs: 1, successRate: 1, durationP50Ms: 1, durationP95Ms: 1, queueWaitP50Ms: 1, queueWaitP95Ms: 1, averageCommentsGenerated: 1, averageCommentsPosted: 1 },
+        '24h': { jobs: 1, successRate: 1, durationP95Ms: 1, queueWaitP95Ms: 1, averageCommentsPosted: 1 },
+        '7d': { jobs: 4, successRate: 0.5, durationP95Ms: 2, queueWaitP95Ms: 2, averageCommentsPosted: 2 },
+        '30d': { jobs: 4, successRate: 0.5, durationP95Ms: 2, queueWaitP95Ms: 2, averageCommentsPosted: 2 },
       },
       dailyTrend: [
-        { day: '2026-07-05', jobs: 2, successRate: 1, averageCommentsGenerated: 3, averageCommentsPosted: 2, stale: 0, skipped: 0, interrupted: 0 },
+        { day: '2026-07-05', jobs: 2, successRate: 1, averageCommentsGenerated: 3, averageCommentsPosted: 2, failed: 0, stale: 0, skipped: 0, interrupted: 0 },
+        { day: '2026-07-06', jobs: 2, successRate: 0.5, averageCommentsGenerated: 2, averageCommentsPosted: 1, failed: 1, stale: 0, skipped: 0, interrupted: 0 },
       ],
     },
     window: 'all',
+    trend: 'data',
   });
-  const markup = html.replace(/<script[\s\S]*?<\/script>/g, '');
-  assert.match(markup, /data-i18n="th_repository">Repository</);
-
-  // Compact only for narrow summary tables; wide window/daily stay full-width metrics tables.
-  assert.match(markup, /class="gh-table metrics-table metrics-table--compact"[\s\S]*?data-i18n="m_fail_class"/);
-  assert.match(markup, /class="gh-table metrics-table metrics-table--compact"[\s\S]*?data-i18n="th_repository"/);
-  assert.match(markup, /class="gh-table metrics-table"[\s\S]*?<thead><tr><th data-i18n="th_window"/);
-  assert.match(markup, /class="gh-table metrics-table"[\s\S]*?<thead><tr><th data-i18n="th_day"/);
-  assert.equal((markup.match(/class="gh-table metrics-table metrics-table--compact"/g) || []).length, 2);
-
-  const metricsCss = html.match(/\/\* Metrics[\s\S]*?\.empty-state/)?.[0] ?? '';
-  assert.ok(metricsCss, 'expected metrics table CSS block');
-  assert.match(metricsCss, /\.gh-table\.metrics-table--compact\s*\{[^}]*width:\s*fit-content;[^}]*max-width:\s*100%;/);
-  assert.match(metricsCss, /\.metrics-table thead th:not\(:first-child\),\s*\.metrics-table td\s*\{[\s\S]*?width:\s*1%;[\s\S]*?text-align:\s*right;/);
-  assert.match(metricsCss, /\.metrics-table th\[scope="row"\]\s*\{[\s\S]*?text-overflow:\s*ellipsis;/);
-  assert.match(metricsCss, /\.metrics-table th\[scope="row"\]\s*\{[\s\S]*?max-width:\s*28rem;/);
-  assert.doesNotMatch(metricsCss, /\.metrics-table\s*\{\s*width:\s*fit-content/);
-  assert.doesNotMatch(html, /\.gh-table th:nth-child\(3\)/);
+  const markup = html;
+  assert.match(markup, /class="metrics-summary"/);
+  assert.ok(markup.includes('class="metrics-list-name" title="makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name"'));
+  assert.match(markup, /class="metrics-day-grid"/);
+  assert.match(markup, /class="metrics-comparison-grid"/);
+  assert.equal(markup.includes('<table'), false);
+  assert.equal(markup.includes('class="table-scroll"'), false);
+  assert.equal(markup.includes('metrics-table'), false);
+  assert.equal(markup.includes('overflow-x: auto'), false);
+  assert.equal(markup.includes('min-width: 560px'), false);
 });
+
 test('Status last-completed cards compact diagnostic and job ids', () => {
   const jobId = '101b9f19-89e9-468f-b16e-19ed0800213a';
   const diagnosticId = 'makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name#350@4999999999';
