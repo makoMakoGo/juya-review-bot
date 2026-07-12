@@ -22,7 +22,10 @@ test('metrics trend chart maps jobs and success rate onto independent axes', () 
   assert.equal(chart.points.at(-1).jobsY, chart.plot.top);
   assert.equal(chart.points[0].successY, chart.plot.top + chart.plotHeight / 2);
   assert.equal(chart.points[1].successY, null);
+  assert.equal(chart.hasSuccessSeries, true);
   assert.equal((chart.successPath.match(/M/g) ?? []).length, 2);
+  assert.match(chart.jobsAreaPath, /^M /);
+  assert.match(chart.jobsAreaPath, / Z$/);
 });
 
 test('metrics trend chart samples long histories while preserving endpoints', () => {
@@ -54,7 +57,7 @@ test('metrics trend chart requires canonical daily metric types', () => {
   );
 });
 
-test('metrics trend chart renders accessible token-based SVG and point titles', () => {
+test('metrics trend chart renders an accessible responsive Primer-style SVG', () => {
   const html = renderMetricsTrendChart([
     { day: day(0), jobs: 3, successRate: 0.5 },
     { day: day(1), jobs: 7, successRate: 1 },
@@ -62,11 +65,25 @@ test('metrics trend chart renders accessible token-based SVG and point titles', 
 
   assert.match(html, /class="metrics-trend-chart"/);
   assert.match(html, /role="img" aria-labelledby="metrics-trend-title metrics-trend-desc"/);
+  assert.match(html, /style="display:block;width:100%;height:auto;min-width:560px"/);
+  assert.match(html, /fill="var\(--accent-subtle\)"/);
+  assert.match(html, /stroke-dasharray="6 4"/);
+  assert.match(html, /<rect [^>]*fill="var\(--bg\)"[^>]*stroke="var\(--border\)"/);
   assert.match(html, /stroke="var\(--accent\)"/);
   assert.match(html, /stroke="var\(--success\)"/);
   assert.match(html, /<title>2026-01-01: 3 jobs<\/title>/);
   assert.match(html, /<title>2026-01-02: 100% success<\/title>/);
   assert.match(html, /Exact values follow in the table\./);
+});
+
+test('metrics trend chart omits the success axis when the series is absent', () => {
+  const html = renderMetricsTrendChart([
+    { day: day(0), jobs: 3, successRate: null },
+    { day: day(1), jobs: 7, successRate: null },
+  ]);
+
+  assert.doesNotMatch(html, /data-i18n="th_success_rate"/);
+  assert.doesNotMatch(html, /stroke="var\(--success\)"/);
 });
 
 test('metrics trend chart omits the visual until two days are available', () => {
