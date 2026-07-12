@@ -1007,8 +1007,9 @@ test('metrics page uses responsive lists and cards instead of horizontally scrol
   assert.equal(markup.includes('<table'), false);
   assert.equal(markup.includes('class="table-scroll"'), false);
   assert.equal(markup.includes('class="metrics-table'), false);
-  assert.equal(markup.includes('overflow-x: auto'), false);
-  assert.equal(markup.includes('min-width: 560px'), false);
+  assert.equal(markup.includes('class="metrics-chart-scroll"'), false);
+  assert.equal(markup.includes('class="metrics-daily-layout"'), false);
+  assert.equal(markup.includes('class="metrics-daily-table-panel"'), false);
 });
 
 test('Status last-completed cards compact diagnostic and job ids', () => {
