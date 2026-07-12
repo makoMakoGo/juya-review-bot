@@ -51,11 +51,12 @@ replaceBlock(
   assert.match(html, /30m 0s/);
   assert.match(html, /class="metrics-list metrics-failure-list"/);
   assert.match(html, /provider_unavailable/);
-  assert.match(html, /alice\/repo/);
+  assert.ok(html.includes('alice/repo'));
   assert.match(html, /class="metrics-day-grid"/);
   assert.match(html, /2026-06-01/);
   assert.match(html, /class="metrics-comparison-grid"/);
-  assert.doesNotMatch(html, /<table|class="table-scroll"/);
+  assert.equal(html.includes('<table'), false);
+  assert.equal(html.includes('class="table-scroll"'), false);
 });`,
   "test('metrics page renders a compact summary, ranked breakdowns, exact daily cards, and comparison'",
 );
@@ -92,13 +93,16 @@ replaceBlock(
     window: 'all',
     trend: 'data',
   });
-  const markup = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  const markup = html;
   assert.match(markup, /class="metrics-summary"/);
-  assert.match(markup, /class="metrics-list-name" title="makoMakoGo\/oh-my-pi-coding-agent-with-a-very-long-name"/);
+  assert.ok(markup.includes('class="metrics-list-name" title="makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name"'));
   assert.match(markup, /class="metrics-day-grid"/);
   assert.match(markup, /class="metrics-comparison-grid"/);
-  assert.doesNotMatch(markup, /<table|class="table-scroll"|metrics-table/);
-  assert.doesNotMatch(markup, /overflow-x:\s*auto|min-width:\s*560px/);
+  assert.equal(markup.includes('<table'), false);
+  assert.equal(markup.includes('class="table-scroll"'), false);
+  assert.equal(markup.includes('metrics-table'), false);
+  assert.equal(markup.includes('overflow-x: auto'), false);
+  assert.equal(markup.includes('min-width: 560px'), false);
 });`,
   "test('metrics page uses responsive lists and cards instead of horizontally scrolling tables'",
 );
