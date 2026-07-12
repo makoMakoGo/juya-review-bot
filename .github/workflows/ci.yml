@@ -82,4 +82,17 @@ jobs:
         run: find src test -name '*.js' -print0 | xargs -0 -n1 node --check
 
       - name: Run tests
-        run: npm test
+        shell: bash
+        run: |
+          if npm test > /tmp/juya-tests.log 2>&1; then
+            tail -n 24 /tmp/juya-tests.log
+          else
+            awk '
+              /^not ok / { printing = 1; remaining = 55 }
+              printing { print; remaining -= 1 }
+              printing && remaining == 0 { printing = 0 }
+            ' /tmp/juya-tests.log
+            echo '--- summary ---'
+            tail -n 24 /tmp/juya-tests.log
+            exit 1
+          fi
