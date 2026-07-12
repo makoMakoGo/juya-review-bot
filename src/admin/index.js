@@ -63,9 +63,12 @@ export {
   safeText,
 } from './templates.js';
 export {
+  DEFAULT_METRICS_TREND,
   DEFAULT_METRICS_WINDOW,
+  METRICS_TRENDS,
   METRICS_WINDOWS,
   buildMetricsView,
+  normalizeMetricsTrend,
   normalizeMetricsWindow,
 } from './metrics.js';
 export { renderMetricsPage } from './metrics-page.js';
