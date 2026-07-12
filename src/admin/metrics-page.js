@@ -2,6 +2,10 @@ import { renderMetricsTrendChart } from './metrics-chart.js';
 import { buildMetricsView, METRICS_WINDOWS } from './metrics.js';
 import { escapeAttribute, escapeHtml, renderLayout } from './templates.js';
 
+const KPI_GRID_STYLE = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:8px;margin:0';
+const DAILY_LAYOUT_STYLE = 'display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px;align-items:start';
+const INNER_PANEL_STYLE = 'min-width:0;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);overflow:hidden';
+
 export function renderMetricsPage({ csrfToken, stats = {}, window: metricsWindow = '', cspNonce = '' } = {}) {
   const view = buildMetricsView(stats, metricsWindow);
   const bucket = view.bucket;
@@ -16,30 +20,36 @@ export function renderMetricsPage({ csrfToken, stats = {}, window: metricsWindow
     { label: 'Avg comments posted', key: 'm_avg_post', value: formatNumber(bucket.averageCommentsPosted) },
   ];
 
-  const metricTiles = overview.map(metric => `<div class="dmetric"><div class="k" data-i18n="${escapeAttribute(metric.key)}">${escapeHtml(metric.label)}</div><div class="v">${escapeHtml(metric.value)}</div></div>`).join('');
+  const metricTiles = overview.map(metric => `<div class="dmetric" style="min-width:0"><div class="k" data-i18n="${escapeAttribute(metric.key)}">${escapeHtml(metric.label)}</div><div class="v">${escapeHtml(metric.value)}</div></div>`).join('');
   const scopeNav = METRICS_WINDOWS.map(item => {
     const selected = item.id === view.selectedWindow;
     const current = selected ? ' aria-current="page"' : '';
-    return `<a class="chip${selected ? ' on' : ''}" href="/admin/metrics?window=${encodeURIComponent(item.id)}"${current}>${windowLabelHtml(item)}</a>`;
+    const style = selected
+      ? 'border-color:var(--accent-border);border-radius:6px;background:var(--accent-subtle);color:var(--accent)'
+      : 'border-color:transparent;border-radius:6px;background:transparent';
+    return `<a class="chip${selected ? ' on' : ''}" style="${style}" href="/admin/metrics?window=${encodeURIComponent(item.id)}"${current}>${windowLabelHtml(item)}</a>`;
   }).join('');
   const selectedWindowLabel = windowLabelHtml(view.metricsWindow);
 
   const failureHtml = view.failureKinds.length > 0
-    ? `<div class="table-scroll"><table class="gh-table metrics-table metrics-table--compact"><caption class="vh">Failure classifications for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="m_fail_class">Failure classification</th><th data-i18n="th_jobs">Jobs</th></tr></thead><tbody>${view.failureKinds.map(item => `<tr><th scope="row">${escapeHtml(item.kind)}</th><td>${escapeHtml(item.count)}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_none">None.</p>';
+    ? `<div class="table-scroll" style="margin:0"><table class="gh-table metrics-table metrics-table--compact"><caption class="vh">Failure classifications for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="m_fail_class">Failure classification</th><th data-i18n="th_jobs">Jobs</th></tr></thead><tbody>${view.failureKinds.map(item => `<tr><th scope="row">${escapeHtml(item.kind)}</th><td>${escapeHtml(item.count)}</td></tr>`).join('')}</tbody></table></div>`
+    : '<p class="empty-state" data-i18n="empty_none">None.</p>';
 
   const repositoryHtml = view.repositories.length > 0
-    ? `<div class="table-scroll"><table class="gh-table metrics-table metrics-table--compact"><caption class="vh">Top repositories for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="th_repository">Repository</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="st_failed">Failed</th></tr></thead><tbody>${view.repositories.map(repo => `<tr><th scope="row" title="${escapeAttribute(repo.name)}">${escapeHtml(repo.name)}</th><td>${escapeHtml(numberOrDash(repo.jobs))}</td><td>${escapeHtml(formatPercent(repo.successRate))}</td><td>${escapeHtml(numberOrDash(repo.failed))}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_none">None.</p>';
+    ? `<div class="table-scroll" style="margin:0"><table class="gh-table metrics-table metrics-table--compact"><caption class="vh">Top repositories for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="th_repository">Repository</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="st_failed">Failed</th></tr></thead><tbody>${view.repositories.map(repo => `<tr><th scope="row" title="${escapeAttribute(repo.name)}">${escapeHtml(repo.name)}</th><td>${escapeHtml(numberOrDash(repo.jobs))}</td><td>${escapeHtml(formatPercent(repo.successRate))}</td><td>${escapeHtml(numberOrDash(repo.failed))}</td></tr>`).join('')}</tbody></table></div>`
+    : '<p class="empty-state" data-i18n="empty_none">None.</p>';
 
-  const comparisonHtml = `<div class="table-scroll"><table class="gh-table metrics-table"><caption class="vh">Metrics window comparison</caption><thead><tr><th data-i18n="th_window">Window</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_dur_p50">Duration p50</th><th data-i18n="m_dur_p95">Duration p95</th><th data-i18n="m_qw_p95">Queue wait p95</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.windowRows.map(row => `<tr${row.id === view.selectedWindow ? ' aria-current="true"' : ''}><th scope="row">${windowLabelHtml(row)}</th><td>${escapeHtml(numberOrDash(row.bucket.jobs))}</td><td>${escapeHtml(formatPercent(row.bucket.successRate))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP50Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP95Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.queueWaitP95Ms))}</td><td>${escapeHtml(formatNumber(row.bucket.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(row.bucket.failed))}</td><td>${escapeHtml(numberOrDash(row.bucket.stale))}</td><td>${escapeHtml(numberOrDash(row.bucket.skipped))}</td><td>${escapeHtml(numberOrDash(row.bucket.interrupted))}</td></tr>`).join('')}</tbody></table></div>`;
+  const comparisonHtml = `<div class="table-scroll" style="margin:0"><table class="gh-table metrics-table"><caption class="vh">Metrics window comparison</caption><thead><tr><th data-i18n="th_window">Window</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_dur_p50">Duration p50</th><th data-i18n="m_dur_p95">Duration p95</th><th data-i18n="m_qw_p95">Queue wait p95</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.windowRows.map(row => `<tr${row.id === view.selectedWindow ? ' aria-current="true" style="background:var(--accent-subtle)"' : ''}><th scope="row">${windowLabelHtml(row)}</th><td>${escapeHtml(numberOrDash(row.bucket.jobs))}</td><td>${escapeHtml(formatPercent(row.bucket.successRate))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP50Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP95Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.queueWaitP95Ms))}</td><td>${escapeHtml(formatNumber(row.bucket.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(row.bucket.failed))}</td><td>${escapeHtml(numberOrDash(row.bucket.stale))}</td><td>${escapeHtml(numberOrDash(row.bucket.skipped))}</td><td>${escapeHtml(numberOrDash(row.bucket.interrupted))}</td></tr>`).join('')}</tbody></table></div>`;
 
   const dailyTableHtml = view.dailyTrend.length > 0
-    ? `<div class="table-scroll"><table class="gh-table metrics-table"><caption class="vh">Daily metrics for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="th_day">Day</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_avg_gen">Avg comments generated</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.dailyTrend.map(day => `<tr><th scope="row">${escapeHtml(day.day)}</th><td>${escapeHtml(numberOrDash(day.jobs))}</td><td>${escapeHtml(formatPercent(day.successRate))}</td><td>${escapeHtml(formatNumber(day.averageCommentsGenerated))}</td><td>${escapeHtml(formatNumber(day.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(day.failed))}</td><td>${escapeHtml(numberOrDash(day.stale))}</td><td>${escapeHtml(numberOrDash(day.skipped))}</td><td>${escapeHtml(numberOrDash(day.interrupted))}</td></tr>`).join('')}</tbody></table></div>`
-    : '<p class="empty" data-i18n="empty_daily">No daily trend data.</p>';
+    ? `<div class="table-scroll" style="margin:0;min-width:0"><table class="gh-table metrics-table"><caption class="vh">Daily metrics for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="th_day">Day</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_avg_gen">Avg comments generated</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.dailyTrend.map(day => `<tr><th scope="row">${escapeHtml(day.day)}</th><td>${escapeHtml(numberOrDash(day.jobs))}</td><td>${escapeHtml(formatPercent(day.successRate))}</td><td>${escapeHtml(formatNumber(day.averageCommentsGenerated))}</td><td>${escapeHtml(formatNumber(day.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(day.failed))}</td><td>${escapeHtml(numberOrDash(day.stale))}</td><td>${escapeHtml(numberOrDash(day.skipped))}</td><td>${escapeHtml(numberOrDash(day.interrupted))}</td></tr>`).join('')}</tbody></table></div>`
+    : '<p class="empty-state" data-i18n="empty_daily">No daily trend data.</p>';
   const dailyChartHtml = renderMetricsTrendChart(view.dailyTrend);
   const dailyContentHtml = dailyChartHtml
-    ? `<div class="box-grid twocol"><div>${dailyChartHtml}</div><div>${dailyTableHtml}</div></div>`
+    ? `<div class="metrics-daily-layout" style="${DAILY_LAYOUT_STYLE}">
+        <div class="metrics-chart-panel" style="${INNER_PANEL_STYLE};background:var(--bg-subtle)"><div class="metrics-chart-scroll" style="min-width:0;overflow-x:auto;padding:14px 14px 10px">${dailyChartHtml}</div></div>
+        <div class="metrics-daily-table-panel" style="${INNER_PANEL_STYLE}">${dailyTableHtml}</div>
+      </div>`
     : dailyTableHtml;
 
   const body = `<div class="metrics-page">
@@ -47,18 +57,18 @@ export function renderMetricsPage({ csrfToken, stats = {}, window: metricsWindow
   <p class="page-desc muted" data-i18n="metrics_page_desc">Latency, comment volume, failure classification, and repository success trends.</p>
 </div>
 <section class="box" aria-labelledby="metrics-overview-title">
-  <div class="box-header">
-    <div><strong id="metrics-overview-title" data-i18n="h2_metrics">Metrics and trends</strong><div class="box-header-meta muted"><code>${selectedWindowLabel}</code></div></div>
-    <nav class="gh-filter" aria-label="Date range" data-i18n-aria-label="aria_date_range">${scopeNav}</nav>
+  <div class="box-header" style="align-items:flex-start;flex-wrap:wrap">
+    <div><strong id="metrics-overview-title" data-i18n="h2_metrics">Metrics and trends</strong><div class="box-header-meta muted">${selectedWindowLabel}</div></div>
+    <nav class="gh-filter" style="gap:2px;padding:3px;border:1px solid var(--border);border-radius:8px;background:var(--bg-subtle)" aria-label="Date range" data-i18n-aria-label="aria_date_range">${scopeNav}</nav>
   </div>
-  <div class="box-body"><div class="metric-row">${metricTiles}</div></div>
+  <div class="box-body" style="padding:16px"><div class="metric-row" style="${KPI_GRID_STYLE}">${metricTiles}</div></div>
 </section>
-<div class="box-grid twocol">
-  <section class="box" aria-labelledby="metrics-failures-title"><div class="box-header"><strong id="metrics-failures-title" data-i18n="m_fail_class">Failure classification</strong><span class="box-header-meta muted">${escapeHtml(numberOrDash(bucket.failed))}</span></div><div class="box-body">${failureHtml}</div></section>
-  <section class="box" aria-labelledby="metrics-repositories-title"><div class="box-header"><strong id="metrics-repositories-title" data-i18n="th_repository">Repository</strong><span class="box-header-meta muted">${escapeHtml(view.repositories.length)}</span></div><div class="box-body">${repositoryHtml}</div></section>
+<div class="box-grid twocol" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr))">
+  <section class="box" aria-labelledby="metrics-failures-title"><div class="box-header"><strong id="metrics-failures-title" data-i18n="m_fail_class">Failure classification</strong><span class="box-header-meta muted">${escapeHtml(numberOrDash(bucket.failed))}</span></div><div class="box-body" style="padding:0">${failureHtml}</div></section>
+  <section class="box" aria-labelledby="metrics-repositories-title"><div class="box-header"><strong id="metrics-repositories-title" data-i18n="th_repository">Repository</strong><span class="box-header-meta muted">${escapeHtml(view.repositories.length)}</span></div><div class="box-body" style="padding:0">${repositoryHtml}</div></section>
 </div>
-<section class="box" aria-labelledby="metrics-daily-title"><div class="box-header"><strong id="metrics-daily-title" data-i18n="m_daily_trend">Daily trend</strong><span class="box-header-meta muted"><code>${selectedWindowLabel}</code></span></div><div class="box-body">${dailyContentHtml}</div></section>
-<section class="box" aria-labelledby="metrics-comparison-title"><div class="box-header"><strong id="metrics-comparison-title" data-i18n="th_window">Window</strong></div><div class="box-body">${comparisonHtml}</div></section>
+<section class="box" aria-labelledby="metrics-daily-title"><div class="box-header"><strong id="metrics-daily-title" data-i18n="m_daily_trend">Daily trend</strong><span class="chip on" aria-hidden="true">${selectedWindowLabel}</span></div><div class="box-body" style="padding:16px">${dailyContentHtml}</div></section>
+<section class="box" aria-labelledby="metrics-comparison-title"><div class="box-header"><strong id="metrics-comparison-title" data-i18n="th_window">Window</strong></div><div class="box-body" style="padding:0">${comparisonHtml}</div></section>
 </div>`;
 
   return renderLayout({ title: 'Metrics', active: 'metrics', csrfToken, body, titleKey: 'page_metrics', cspNonce });
