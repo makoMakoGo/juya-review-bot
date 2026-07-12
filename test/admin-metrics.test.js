@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { AdminRouter } from '../src/admin/router.js';
-import { buildMetricsView, DEFAULT_METRICS_WINDOW, normalizeMetricsWindow } from '../src/admin/metrics.js';
+import {
+  buildMetricsView,
+  DEFAULT_METRICS_TREND,
+  DEFAULT_METRICS_WINDOW,
+  normalizeMetricsTrend,
+  normalizeMetricsWindow,
+} from '../src/admin/metrics.js';
 import { renderMetricsPage } from '../src/admin/metrics-page.js';
 import { createSessionCookie, createSessionStore } from '../src/admin/session.js';
 
@@ -29,20 +35,23 @@ const stats = {
     '30d': { jobs: 30, failed: 6, successRate: 0.8, failureKinds: { provider_unavailable: 4, git_error: 2 }, repositories: {} },
   },
   dailyTrend: [
-    { day: '2026-07-01', jobs: 1, successRate: 1 },
-    { day: '2026-07-05', jobs: 2, successRate: 0.5 },
-    { day: '2026-07-11', jobs: 3, successRate: 1 },
+    { day: '2026-07-01', jobs: 1, failed: 0, stale: 0, skipped: 0, interrupted: 0, successRate: 1, averageCommentsGenerated: 2, averageCommentsPosted: 2 },
+    { day: '2026-07-05', jobs: 2, failed: 1, stale: 0, skipped: 0, interrupted: 0, successRate: 0.5, averageCommentsGenerated: 3, averageCommentsPosted: 1.5 },
+    { day: '2026-07-11', jobs: 3, failed: 0, stale: 0, skipped: 0, interrupted: 0, successRate: 1, averageCommentsGenerated: 4, averageCommentsPosted: 3 },
   ],
 };
 
-test('metrics window normalization is explicit and stable', () => {
+test('metrics window and trend normalization are explicit and stable', () => {
   assert.equal(DEFAULT_METRICS_WINDOW, '7d');
+  assert.equal(DEFAULT_METRICS_TREND, 'chart');
   assert.equal(normalizeMetricsWindow('24H'), '24h');
   assert.equal(normalizeMetricsWindow('all'), 'all');
+  assert.equal(normalizeMetricsTrend('DATA'), 'data');
   assert.throws(() => normalizeMetricsWindow('unknown'), /window must be one of/);
+  assert.throws(() => normalizeMetricsTrend('table'), /trend must be one of/);
 });
 
-test('metrics view selects one bucket and sorts high-signal tables', () => {
+test('metrics view selects one bucket and sorts high-signal lists', () => {
   const view = buildMetricsView(stats, '7d', { now: '2026-07-11T12:00:00.000Z' });
   assert.equal(view.metricsWindow.id, '7d');
   assert.equal(view.bucket.jobs, 7);
@@ -61,36 +70,62 @@ test('metrics view rejects stringly typed internal counters', () => {
   );
 });
 
-test('metrics page renders a shareable selected scope and escapes repository names', () => {
+test('chart view is full-width, shareable, escaped, and contains no metrics table scroll shell', () => {
   const unsafe = structuredClone(stats);
   unsafe.windows['7d'].repositories['<script>alert(1)</script>'] = { jobs: 99, successRate: 0, failed: 99 };
-  const html = renderMetricsPage({ stats: unsafe, window: '7d' });
+  const html = renderMetricsPage({ stats: unsafe, window: '7d', trend: 'chart' });
 
-  assert.match(html, /href="\/admin\/metrics\?window=7d" aria-current="page"/);
-  assert.match(html, /<div class="v">7<\/div>/);
+  assert.match(html, /href="\/admin\/metrics\?window=7d&amp;trend=chart" aria-current="page"/);
+  assert.match(html, /href="\/admin\/metrics\?window=7d&amp;trend=data"/);
+  assert.match(html, /class="metrics-summary"/);
+  assert.match(html, /class="metrics-trend-chart"/);
+  assert.match(html, /class="metrics-list metrics-failure-list"/);
+  assert.match(html, /class="metrics-comparison-grid"/);
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
-  assert.match(html, /id="metrics-comparison-title" data-i18n="th_window"/);
+  assert.doesNotMatch(html, /class="table-scroll"/);
+  assert.doesNotMatch(html, /<table/);
+  assert.doesNotMatch(html, /min-width:560px|overflow-x:auto/);
 });
 
-test('metrics route preserves the selected window and rejects unknown values', async () => {
+test('data view replaces the chart with responsive exact-value cards', () => {
+  const html = renderMetricsPage({ stats, window: 'all', trend: 'data' });
+  assert.match(html, /href="\/admin\/metrics\?window=all&amp;trend=data" aria-current="page"/);
+  assert.match(html, /class="metrics-day-grid"/);
+  assert.match(html, /<time datetime="2026-07-11">2026-07-11<\/time>/);
+  assert.match(html, /data-i18n="m_avg_post">Posted<\/small><strong>3<\/strong>/);
+  assert.doesNotMatch(html, /class="metrics-trend-chart"/);
+  assert.doesNotMatch(html, /<table/);
+});
+
+test('metrics route preserves both URL modes and rejects invalid values before loading data', async () => {
   const sessions = createSessionStore();
   const session = sessions.create();
+  let loads = 0;
   const router = new AdminRouter({
     adminPassword: 'correct horse battery staple',
     secureCookies: false,
     sessions,
-    loadDashboard: async () => ({ stats }),
+    loadDashboard: async () => {
+      loads += 1;
+      return { stats };
+    },
   });
   const cookie = createSessionCookie(session.id, { secure: false }).split(';', 1)[0];
   const request = url => ({ method: 'GET', url, headers: { host: 'localhost', cookie }, remoteAddress: '127.0.0.1' });
 
-  const selected = await router.route(request('/admin/metrics?window=30d'));
+  const selected = await router.route(request('/admin/metrics?window=30d&trend=data'));
   assert.equal(selected.status, 200);
-  assert.match(selected.body, /href="\/admin\/metrics\?window=30d" aria-current="page"/);
-  assert.match(selected.body, /<div class="v">30<\/div>/);
+  assert.match(selected.body, /href="\/admin\/metrics\?window=30d&amp;trend=data" aria-current="page"/);
+  assert.match(selected.body, /class="metrics-day-grid"/);
+  assert.equal(loads, 1);
 
-  const invalid = await router.route(request('/admin/metrics?window=year'));
-  assert.equal(invalid.status, 400);
-  assert.match(invalid.body, /window must be one of/);
+  const invalidWindow = await router.route(request('/admin/metrics?window=year&trend=chart'));
+  assert.equal(invalidWindow.status, 400);
+  assert.match(invalidWindow.body, /window must be one of/);
+
+  const invalidTrend = await router.route(request('/admin/metrics?window=7d&trend=table'));
+  assert.equal(invalidTrend.status, 400);
+  assert.match(invalidTrend.body, /trend must be one of/);
+  assert.equal(loads, 1);
 });

@@ -3,6 +3,7 @@ const DEFAULT_REPOSITORY_LIMIT = 10;
 const MAX_REPOSITORY_LIMIT = 100;
 
 export const DEFAULT_METRICS_WINDOW = '7d';
+export const DEFAULT_METRICS_TREND = 'chart';
 
 export const METRICS_WINDOWS = Object.freeze([
   Object.freeze({ id: '24h', label: '24h', widthMs: DAY_MS }),
@@ -11,13 +12,28 @@ export const METRICS_WINDOWS = Object.freeze([
   Object.freeze({ id: 'all', label: 'All', widthMs: null }),
 ]);
 
+export const METRICS_TRENDS = Object.freeze([
+  Object.freeze({ id: 'chart', label: 'Chart' }),
+  Object.freeze({ id: 'data', label: 'Data' }),
+]);
+
 const METRICS_WINDOW_BY_ID = new Map(METRICS_WINDOWS.map(item => [item.id, item]));
+const METRICS_TREND_IDS = new Set(METRICS_TRENDS.map(item => item.id));
 
 export function normalizeMetricsWindow(value) {
   const normalized = String(value ?? '').trim().toLowerCase();
   if (normalized === '') return DEFAULT_METRICS_WINDOW;
   if (!METRICS_WINDOW_BY_ID.has(normalized)) {
     throw new RangeError(`window must be one of: ${METRICS_WINDOWS.map(item => item.id).join(', ')}`);
+  }
+  return normalized;
+}
+
+export function normalizeMetricsTrend(value) {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === '') return DEFAULT_METRICS_TREND;
+  if (!METRICS_TREND_IDS.has(normalized)) {
+    throw new RangeError(`trend must be one of: ${METRICS_TRENDS.map(item => item.id).join(', ')}`);
   }
   return normalized;
 }
