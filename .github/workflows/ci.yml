@@ -47,6 +47,10 @@ jobs:
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         run: node .github/scripts/pr3-patch-tests.js
 
+      - name: Finalize responsive Metrics test
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node .github/scripts/pr3-fix-review-test.js
+
       - name: Check patched dashboard test
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         run: node --check test/admin-dashboard-status.test.js
