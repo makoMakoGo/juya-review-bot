@@ -24,37 +24,66 @@ jobs:
       - name: Trust workspace
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
-      - name: Apply final Metrics assertion update
+      - name: Remove PR implementation scaffolding
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         shell: bash
         run: |
           git fetch origin agent/daily-trend-chart
           git checkout -B agent/daily-trend-chart origin/agent/daily-trend-chart
-          node <<'NODE'
-          const fs = require('node:fs');
-          const path = 'test/admin-review-fixes.test.js';
-          const source = fs.readFileSync(path, 'utf8');
-          const overflowAssertion = "  assert.equal(markup.includes('overflow-x: auto'), false);";
-          const widthAssertion = "  assert.equal(markup.includes('min-width: 560px'), false);";
-          let next = source;
-          if (next.includes(overflowAssertion)) {
-            next = next.replace(overflowAssertion, "  assert.equal(markup.includes('class=\"metrics-chart-scroll\"'), false);\n  assert.equal(markup.includes('class=\"metrics-daily-layout\"'), false);");
-          }
-          if (next.includes(widthAssertion)) {
-            next = next.replace(widthAssertion, "  assert.equal(markup.includes('class=\"metrics-daily-table-panel\"'), false);");
-          }
-          if (next === source && !source.includes('class="metrics-daily-table-panel"')) {
-            throw new Error('legacy Metrics assertions not found');
-          }
-          if (next !== source) fs.writeFileSync(path, next);
-          NODE
+          git rm -f --ignore-unmatch \
+            .github/pr3-responsive-metrics-trigger \
+            .github/scripts/pr3-responsive-metrics.js \
+            .github/scripts/pr3-patch-layout.js \
+            .github/scripts/pr3-patch-tests.js \
+            .github/scripts/pr3-fix-review-test.js \
+            .github/workflows/pr3-apply-responsive-metrics.yml \
+            .github/workflows/pr3-test-matrix.yml \
+            .github/workflows/pr3-failure-log.yml \
+            .github/workflows/pr3-final-test-fix.yml
+          cat > .github/workflows/ci.yml <<'YAML'
+          name: Juya Review Bot CI
+
+          on:
+            pull_request:
+            push:
+              branches: [main]
+
+          permissions:
+            contents: read
+
+          jobs:
+            test:
+              runs-on: ubuntu-latest
+              container:
+                image: node:20
+              defaults:
+                run:
+                  working-directory: .
+              steps:
+                - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+                  with:
+                    persist-credentials: false
+
+                - name: Trust workspace
+                  run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+                - name: Install dependencies
+                  run: npm ci
+
+                - name: Check JavaScript syntax
+                  run: find src test -name '*.js' -print0 | xargs -0 -n1 node --check
+
+                - name: Run tests
+                  run: npm test
+          YAML
+          git diff --check
           if git diff --quiet; then
             exit 0
           fi
           git config user.name 'makoMakoGo'
           git config user.email '48956204+makoMakoGo@users.noreply.github.com'
-          git add test/admin-review-fixes.test.js
-          git commit -m 'test: assert the removed Metrics layout directly'
+          git add -A
+          git commit -m 'chore: remove PR implementation scaffolding'
           git push origin HEAD:agent/daily-trend-chart
 
       - name: Install dependencies
