@@ -35,19 +35,34 @@ jobs:
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         run: node .github/scripts/pr3-patch-layout.js
 
+      - name: Check patched templates
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node --check src/admin/templates.js
+
+      - name: Check patched router
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node --check src/admin/router.js
+
       - name: Patch legacy Metrics tests
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         run: node .github/scripts/pr3-patch-tests.js
+
+      - name: Check patched dashboard test
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node --check test/admin-dashboard-status.test.js
+
+      - name: Check patched review test
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: node --check test/admin-review-fixes.test.js
+
+      - name: Check responsive Metrics diff
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: git diff --check
 
       - name: Commit responsive Metrics refactor
         if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
         shell: bash
         run: |
-          node --check src/admin/templates.js
-          node --check src/admin/router.js
-          node --check test/admin-dashboard-status.test.js
-          node --check test/admin-review-fixes.test.js
-          git diff --check
           if git diff --quiet; then
             exit 0
           fi
@@ -55,7 +70,10 @@ jobs:
           git config user.email '48956204+makoMakoGo@users.noreply.github.com'
           git add src/admin/templates.js src/admin/router.js test/admin-dashboard-status.test.js test/admin-review-fixes.test.js
           git commit -m 'refactor: complete responsive Metrics architecture'
-          git push origin HEAD:agent/daily-trend-chart
+
+      - name: Push responsive Metrics refactor
+        if: github.event_name == 'pull_request' && github.head_ref == 'agent/daily-trend-chart'
+        run: git push origin HEAD:agent/daily-trend-chart
 
       - name: Install dependencies
         run: npm ci
