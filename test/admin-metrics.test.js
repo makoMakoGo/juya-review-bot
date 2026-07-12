@@ -61,7 +61,7 @@ test('metrics view rejects stringly typed internal counters', () => {
   );
 });
 
-test('metrics page renders a shareable selected scope and escapes repository names', () => {
+test('metrics page renders a shareable selected scope, accessible trend chart, and exact table', () => {
   const unsafe = structuredClone(stats);
   unsafe.windows['7d'].repositories['<script>alert(1)</script>'] = { jobs: 99, successRate: 0, failed: 99 };
   const html = renderMetricsPage({ stats: unsafe, window: '7d' });
@@ -71,6 +71,11 @@ test('metrics page renders a shareable selected scope and escapes repository nam
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert\(1\)<\/script>/);
   assert.match(html, /id="metrics-comparison-title" data-i18n="th_window"/);
+  assert.match(html, /class="metrics-trend-chart"/);
+  assert.match(html, /role="img" aria-labelledby="metrics-trend-title metrics-trend-desc"/);
+  assert.match(html, /stroke="var\(--accent\)"/);
+  assert.match(html, /stroke="var\(--success\)"/);
+  assert.match(html, /<caption class="vh">Daily metrics for 7d<\/caption>/);
 });
 
 test('metrics route preserves the selected window and rejects unknown values', async () => {
