@@ -44,11 +44,21 @@ test('metrics window normalization is explicit and stable', () => {
 
 test('metrics view selects one bucket and sorts high-signal tables', () => {
   const view = buildMetricsView(stats, '7d', { now: '2026-07-11T12:00:00.000Z' });
+  assert.equal(view.metricsWindow.id, '7d');
   assert.equal(view.bucket.jobs, 7);
   assert.deepEqual(view.repositories.map(repo => repo.name), ['alpha/repo', 'zeta/repo']);
   assert.deepEqual(view.failureKinds, [{ kind: 'git_error', count: 1 }]);
   assert.deepEqual(view.dailyTrend.map(day => day.day), ['2026-07-05', '2026-07-11']);
   assert.deepEqual(view.windowRows.map(row => row.id), ['24h', '7d', '30d', 'all']);
+});
+
+test('metrics view rejects stringly typed internal counters', () => {
+  const malformed = structuredClone(stats);
+  malformed.windows['7d'].repositories['alpha/repo'].jobs = '5';
+  assert.throws(
+    () => buildMetricsView(malformed, '7d'),
+    /repository alpha\/repo jobs must be a finite number/,
+  );
 });
 
 test('metrics page renders a shareable selected scope and escapes repository names', () => {
