@@ -1,0 +1,221 @@
+name: Apply responsive Metrics architecture
+
+on:
+  push:
+    branches:
+      - agent/daily-trend-chart
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: true
+          ref: agent/daily-trend-chart
+      - name: Apply shared layout, routing, i18n, and test updates
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function update(path, transform) {
+            const source = fs.readFileSync(path, 'utf8');
+            const next = transform(source);
+            if (next === source) return false;
+            fs.writeFileSync(path, next);
+            return true;
+          }
+
+          function replaceOnce(source, before, after, label) {
+            const index = source.indexOf(before);
+            if (index < 0) throw new Error(`${label} not found`);
+            if (source.indexOf(before, index + before.length) >= 0) throw new Error(`${label} is not unique`);
+            return source.slice(0, index) + after + source.slice(index + before.length);
+          }
+
+          function replaceBlock(source, startMarker, endMarker, replacement, label) {
+            const start = source.indexOf(startMarker);
+            const end = source.indexOf(endMarker, start + startMarker.length);
+            if (start < 0 || end < 0) throw new Error(`${label} markers not found`);
+            return source.slice(0, start) + replacement + '\n\n' + source.slice(end);
+          }
+
+          update('src/admin/templates.js', source => {
+            let next = replaceOnce(
+              source,
+              "export function renderLayout({ title, active = 'dashboard', csrfToken = '', body, titleKey = '', cspNonce = '' }) {",
+              "export function renderLayout({ title, active = 'dashboard', csrfToken = '', body, titleKey = '', cspNonce = '', pageStyles = '' }) {",
+              'renderLayout signature',
+            );
+            next = replaceOnce(
+              next,
+              '${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>',
+              '${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}${pageStyles}</style>',
+              'renderLayout style slot',
+            );
+            next = replaceOnce(
+              next,
+              "    m_fail_class: 'Failure classification', m_daily_trend: 'Daily trend', empty_daily: 'No daily trend data.',",
+              "    m_fail_class: 'Failure classification', m_daily_trend: 'Daily trend', empty_daily: 'No daily trend data.',\n    metrics_trend_chart: 'Chart', metrics_trend_data: 'Data', metrics_trend_view: 'Trend view', metrics_summary: 'Metrics summary', metrics_duration: 'Duration', metrics_queue_wait: 'Queue wait', metrics_comments: 'Comments', metrics_window_comparison: 'Window comparison',",
+              'English Metrics translations',
+            );
+            next = replaceOnce(
+              next,
+              "    m_fail_class: '失败分类', m_daily_trend: '每日趋势', empty_daily: '暂无每日趋势数据。',",
+              "    m_fail_class: '失败分类', m_daily_trend: '每日趋势', empty_daily: '暂无每日趋势数据。',\n    metrics_trend_chart: '图表', metrics_trend_data: '数据', metrics_trend_view: '趋势视图', metrics_summary: '指标摘要', metrics_duration: '耗时', metrics_queue_wait: '排队等待', metrics_comments: '评论', metrics_window_comparison: '时间窗对比',",
+              'Chinese Metrics translations',
+            );
+            return next;
+          });
+
+          update('src/admin/router.js', source => {
+            let next = replaceOnce(
+              source,
+              "import { normalizeMetricsWindow } from './metrics.js';",
+              "import { normalizeMetricsTrend, normalizeMetricsWindow } from './metrics.js';",
+              'Metrics router import',
+            );
+            next = replaceOnce(
+              next,
+              String.raw`    if (normalized.pathname === '/admin/metrics') {
+      if (normalized.method !== 'GET') return methodNotAllowed(['GET']);
+      let window;
+      try {
+        window = normalizeMetricsWindow(normalized.query.get('window'));
+      } catch (error) {
+        return textResponse(error.message, { status: 400 });
+      }
+      const dashboard = await this.loadDashboard({ request: normalized, session });
+      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window }));
+    }`,
+              String.raw`    if (normalized.pathname === '/admin/metrics') {
+      if (normalized.method !== 'GET') return methodNotAllowed(['GET']);
+      let metricsWindow;
+      let trend;
+      try {
+        metricsWindow = normalizeMetricsWindow(normalized.query.get('window'));
+        trend = normalizeMetricsTrend(normalized.query.get('trend'));
+      } catch (error) {
+        return textResponse(error.message, { status: 400 });
+      }
+      const dashboard = await this.loadDashboard({ request: normalized, session });
+      return htmlResponse((nonce) => renderMetricsPage({ csrfToken: session.csrfToken, cspNonce: nonce, stats: dashboard.stats, window: metricsWindow, trend }));
+    }`,
+              'Metrics route',
+            );
+            return next;
+          });
+
+          update('test/admin-dashboard-status.test.js', source => replaceBlock(
+            source,
+            "test('metrics page renders latency percentiles comments failure repository and daily metrics'",
+            "test('service status renders actual listener port separately from configured port'",
+            String.raw`test('metrics page renders a compact summary, ranked breakdowns, exact daily cards, and comparison', () => {
+  const stats = {
+    total: {
+      jobs: 2,
+      succeeded: 1,
+      failed: 1,
+      successRate: 0.5,
+      durationP50Ms: 10 * 60 * 1000,
+      durationP95Ms: 30 * 60 * 1000,
+      queueWaitP50Ms: 5 * 60 * 1000,
+      queueWaitP95Ms: 10 * 60 * 1000,
+      averageCommentsGenerated: 4.5,
+      averageCommentsPosted: 2,
+      stale: 1,
+      skipped: 1,
+      interrupted: 1,
+      failureKinds: { provider_unavailable: 1 },
+      repositories: {
+        'alice/repo': { jobs: 2, succeeded: 1, failed: 1, successRate: 0.5 },
+      },
+    },
+    windows: {
+      '24h': { jobs: 2, succeeded: 1, failed: 1, stale: 1, skipped: 1, interrupted: 1, successRate: 0.5, durationP50Ms: 10 * 60 * 1000, durationP95Ms: 30 * 60 * 1000, queueWaitP50Ms: 5 * 60 * 1000, queueWaitP95Ms: 10 * 60 * 1000, averageCommentsGenerated: 4.5, averageCommentsPosted: 2, failureKinds: { provider_unavailable: 1 }, repositories: { 'alice/repo': { jobs: 2, succeeded: 1, failed: 1, stale: 1, skipped: 1, interrupted: 1, successRate: 0.5 } } },
+      '7d': { jobs: 2, succeeded: 1, failed: 1, successRate: 0.5, durationP50Ms: 10 * 60 * 1000, durationP95Ms: 30 * 60 * 1000, queueWaitP50Ms: 5 * 60 * 1000, queueWaitP95Ms: 10 * 60 * 1000, averageCommentsGenerated: 4.5, averageCommentsPosted: 2 },
+      '30d': { jobs: 2, succeeded: 1, failed: 1, successRate: 0.5, durationP50Ms: 10 * 60 * 1000, durationP95Ms: 30 * 60 * 1000, queueWaitP50Ms: 5 * 60 * 1000, queueWaitP95Ms: 10 * 60 * 1000, averageCommentsGenerated: 4.5, averageCommentsPosted: 2 },
+    },
+    dailyTrend: [
+      { day: '2026-06-01', jobs: 2, succeeded: 1, failed: 1, stale: 1, skipped: 1, interrupted: 1, successRate: 0.5, averageCommentsGenerated: 4.5, averageCommentsPosted: 2 },
+    ],
+  };
+
+  const html = renderMetricsPage({ csrfToken: 'csrf', stats, window: 'all', trend: 'data' });
+  assert.match(html, /class="metrics-summary"/);
+  assert.match(html, /data-i18n="metrics_duration">Duration/);
+  assert.match(html, /10m 0s/);
+  assert.match(html, /30m 0s/);
+  assert.match(html, /class="metrics-list metrics-failure-list"/);
+  assert.match(html, /provider_unavailable/);
+  assert.match(html, /alice\/repo/);
+  assert.match(html, /class="metrics-day-grid"/);
+  assert.match(html, /2026-06-01/);
+  assert.match(html, /class="metrics-comparison-grid"/);
+  assert.doesNotMatch(html, /<table|class="table-scroll"/);
+});`,
+            'dashboard Metrics test',
+          ));
+
+          update('test/admin-review-fixes.test.js', source => replaceBlock(
+            source,
+            "test('metrics repository table keeps numeric columns content-sized and right-aligned'",
+            "test('Status last-completed cards compact diagnostic and job ids'",
+            String.raw`test('metrics page uses responsive lists and cards instead of horizontally scrolling tables', () => {
+  const repository = 'makoMakoGo/oh-my-pi-coding-agent-with-a-very-long-name';
+  const html = renderMetricsPage({
+    csrfToken: 'csrf',
+    stats: {
+      total: {
+        jobs: 4,
+        failed: 2,
+        successRate: 0.5,
+        repositories: {
+          [repository]: { jobs: 1, successRate: 1 },
+          'alice/monorepo': { jobs: 3, successRate: 0.5 },
+        },
+        failureKinds: { provider_unavailable: 2 },
+      },
+      windows: {
+        '24h': { jobs: 1, successRate: 1, durationP95Ms: 1, queueWaitP95Ms: 1, averageCommentsPosted: 1 },
+        '7d': { jobs: 4, successRate: 0.5, durationP95Ms: 2, queueWaitP95Ms: 2, averageCommentsPosted: 2 },
+        '30d': { jobs: 4, successRate: 0.5, durationP95Ms: 2, queueWaitP95Ms: 2, averageCommentsPosted: 2 },
+      },
+      dailyTrend: [
+        { day: '2026-07-05', jobs: 2, successRate: 1, averageCommentsGenerated: 3, averageCommentsPosted: 2, failed: 0, stale: 0, skipped: 0, interrupted: 0 },
+        { day: '2026-07-06', jobs: 2, successRate: 0.5, averageCommentsGenerated: 2, averageCommentsPosted: 1, failed: 1, stale: 0, skipped: 0, interrupted: 0 },
+      ],
+    },
+    window: 'all',
+    trend: 'data',
+  });
+  const markup = html.replace(/<script[\s\S]*?<\/script>/g, '');
+  assert.match(markup, /class="metrics-summary"/);
+  assert.match(markup, /class="metrics-list-name" title="makoMakoGo\/oh-my-pi-coding-agent-with-a-very-long-name"/);
+  assert.match(markup, /class="metrics-day-grid"/);
+  assert.match(markup, /class="metrics-comparison-grid"/);
+  assert.doesNotMatch(markup, /<table|class="table-scroll"|metrics-table/);
+  assert.doesNotMatch(markup, /overflow-x:\s*auto|min-width:\s*560px/);
+});`,
+            'review-fixes Metrics test',
+          ));
+          NODE
+
+          node --check src/admin/templates.js
+          node --check src/admin/router.js
+          node --check test/admin-dashboard-status.test.js
+          node --check test/admin-review-fixes.test.js
+          git diff --check
+
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'makoMakoGo'
+          git config user.email '48956204+makoMakoGo@users.noreply.github.com'
+          git add src/admin/templates.js src/admin/router.js test/admin-dashboard-status.test.js test/admin-review-fixes.test.js
+          git commit -m 'refactor: complete responsive Metrics architecture'
+          git push origin HEAD:agent/daily-trend-chart
