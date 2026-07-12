@@ -1,3 +1,4 @@
+import { renderMetricsTrendChart } from './metrics-chart.js';
 import { buildMetricsView, METRICS_WINDOWS } from './metrics.js';
 import { escapeAttribute, escapeHtml, renderLayout } from './templates.js';
 
@@ -33,9 +34,13 @@ export function renderMetricsPage({ csrfToken, stats = {}, window: metricsWindow
 
   const comparisonHtml = `<div class="table-scroll"><table class="gh-table metrics-table"><caption class="vh">Metrics window comparison</caption><thead><tr><th data-i18n="th_window">Window</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_dur_p50">Duration p50</th><th data-i18n="m_dur_p95">Duration p95</th><th data-i18n="m_qw_p95">Queue wait p95</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.windowRows.map(row => `<tr${row.id === view.selectedWindow ? ' aria-current="true"' : ''}><th scope="row">${windowLabelHtml(row)}</th><td>${escapeHtml(numberOrDash(row.bucket.jobs))}</td><td>${escapeHtml(formatPercent(row.bucket.successRate))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP50Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.durationP95Ms))}</td><td>${escapeHtml(formatDuration(row.bucket.queueWaitP95Ms))}</td><td>${escapeHtml(formatNumber(row.bucket.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(row.bucket.failed))}</td><td>${escapeHtml(numberOrDash(row.bucket.stale))}</td><td>${escapeHtml(numberOrDash(row.bucket.skipped))}</td><td>${escapeHtml(numberOrDash(row.bucket.interrupted))}</td></tr>`).join('')}</tbody></table></div>`;
 
-  const dailyHtml = view.dailyTrend.length > 0
+  const dailyTableHtml = view.dailyTrend.length > 0
     ? `<div class="table-scroll"><table class="gh-table metrics-table"><caption class="vh">Daily metrics for ${escapeHtml(view.metricsWindow.label)}</caption><thead><tr><th data-i18n="th_day">Day</th><th data-i18n="th_jobs">Jobs</th><th data-i18n="th_success_rate">Success rate</th><th data-i18n="m_avg_gen">Avg comments generated</th><th data-i18n="m_avg_post">Avg comments posted</th><th data-i18n="st_failed">Failed</th><th data-i18n="m_stale">Stale</th><th data-i18n="m_skipped">Skipped</th><th data-i18n="m_interrupted">Interrupted</th></tr></thead><tbody>${view.dailyTrend.map(day => `<tr><th scope="row">${escapeHtml(day.day)}</th><td>${escapeHtml(numberOrDash(day.jobs))}</td><td>${escapeHtml(formatPercent(day.successRate))}</td><td>${escapeHtml(formatNumber(day.averageCommentsGenerated))}</td><td>${escapeHtml(formatNumber(day.averageCommentsPosted))}</td><td>${escapeHtml(numberOrDash(day.failed))}</td><td>${escapeHtml(numberOrDash(day.stale))}</td><td>${escapeHtml(numberOrDash(day.skipped))}</td><td>${escapeHtml(numberOrDash(day.interrupted))}</td></tr>`).join('')}</tbody></table></div>`
     : '<p class="empty" data-i18n="empty_daily">No daily trend data.</p>';
+  const dailyChartHtml = renderMetricsTrendChart(view.dailyTrend);
+  const dailyContentHtml = dailyChartHtml
+    ? `<div class="box-grid twocol"><div>${dailyChartHtml}</div><div>${dailyTableHtml}</div></div>`
+    : dailyTableHtml;
 
   const body = `<div class="metrics-page">
 <div class="page-header">
@@ -52,7 +57,7 @@ export function renderMetricsPage({ csrfToken, stats = {}, window: metricsWindow
   <section class="box" aria-labelledby="metrics-failures-title"><div class="box-header"><strong id="metrics-failures-title" data-i18n="m_fail_class">Failure classification</strong><span class="box-header-meta muted">${escapeHtml(numberOrDash(bucket.failed))}</span></div><div class="box-body">${failureHtml}</div></section>
   <section class="box" aria-labelledby="metrics-repositories-title"><div class="box-header"><strong id="metrics-repositories-title" data-i18n="th_repository">Repository</strong><span class="box-header-meta muted">${escapeHtml(view.repositories.length)}</span></div><div class="box-body">${repositoryHtml}</div></section>
 </div>
-<section class="box" aria-labelledby="metrics-daily-title"><div class="box-header"><strong id="metrics-daily-title" data-i18n="m_daily_trend">Daily trend</strong><span class="box-header-meta muted"><code>${selectedWindowLabel}</code></span></div><div class="box-body">${dailyHtml}</div></section>
+<section class="box" aria-labelledby="metrics-daily-title"><div class="box-header"><strong id="metrics-daily-title" data-i18n="m_daily_trend">Daily trend</strong><span class="box-header-meta muted"><code>${selectedWindowLabel}</code></span></div><div class="box-body">${dailyContentHtml}</div></section>
 <section class="box" aria-labelledby="metrics-comparison-title"><div class="box-header"><strong id="metrics-comparison-title" data-i18n="th_window">Window</strong></div><div class="box-body">${comparisonHtml}</div></section>
 </div>`;
 
