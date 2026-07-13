@@ -557,9 +557,9 @@ function formatEditorValue(value) {
 
 function renderAlert(messageHtml, { tone = 'error', list = false } = {}) {
   const tones = {
-    error: { className: 'error', labelKey: 'alert_error', labelText: 'Error' },
-    warning: { className: 'warning', labelKey: 'alert_warning', labelText: 'Warning' },
-    success: { className: 'success', labelKey: 'alert_success', labelText: 'Success' },
+    error: { className: 'error', labelKey: 'alert_error', labelText: 'Error', role: 'alert' },
+    warning: { className: 'warning', labelKey: 'alert_warning', labelText: 'Warning', role: 'alert' },
+    success: { className: 'success', labelKey: 'alert_success', labelText: 'Success', role: 'status' },
   };
   if (!Object.hasOwn(tones, tone)) {
     throw new Error(`unsupported alert tone: ${tone}`);
@@ -568,7 +568,7 @@ function renderAlert(messageHtml, { tone = 'error', list = false } = {}) {
   const body = list
     ? `<ul>${messageHtml}</ul>`
     : `<div class="alert-body">${messageHtml}</div>`;
-  return `<div class="alert ${meta.className}"><strong class="alert-label" data-i18n="${meta.labelKey}">${meta.labelText}</strong>${body}</div>`;
+  return `<div class="alert ${meta.className}" role="${meta.role}"><strong class="alert-label" data-i18n="${meta.labelKey}">${meta.labelText}</strong>${body}</div>`;
 }
 
 export function renderErrorPage({ csrfToken = '', status = 500, title = 'Error', message = 'Something went wrong', cspNonce = '' } = {}) {
@@ -1119,7 +1119,7 @@ function baseStyles() {
 ::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: var(--radius-pill); border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--border-bright); background-clip: padding-box; }
 
-html { scrollbar-gutter: stable; }
+html { scrollbar-gutter: stable; scroll-padding-top: 5rem; }
 
 body {
   margin: 0;
