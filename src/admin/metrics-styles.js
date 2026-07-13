@@ -14,7 +14,7 @@ export function metricsStyles() {
 .metrics-summary-value { margin-top: 5px; color: var(--text); font-size: 22px; font-weight: 650; line-height: 1.15; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .metrics-summary-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 7px; }
 .metrics-summary-pair span { display: grid; gap: 2px; min-width: 0; }
-.metrics-summary-pair small { color: var(--fg-subtle); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.metrics-summary-pair small { color: var(--fg-subtle); font-size: 10px; font-weight: 600; }
 .metrics-summary-pair strong { color: var(--text); font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .metrics-section-heading { display: grid; gap: 2px; min-width: 0; }
 .metrics-section-heading small { color: var(--fg-subtle); font-size: 11px; font-weight: 500; }
