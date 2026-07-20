@@ -2,33 +2,33 @@ import { escapeHtml, formatBytes, formatDate, formatDuration, formatRepository, 
 import { diagnosticCode, jobIdCodeLink, jobIdRow, jobStatusPill, mapServiceHealth, renderDiagnosticsList } from './partials.js';
 import { renderLayout } from './layout.js';
 
-// GitHub Primer look for the status dashboard. Everything is scoped under
+// Notion warm-paper look for the status dashboard. Everything is scoped under
 // .dashboard so baseStyles stays untouched; only the shared custom
 // properties (--canvas-*, --fg-*, --border-*, semantic *-fg) are referenced.
 // Pill/badge fills need per-theme subtle backgrounds, which are defined as
 // page-scoped variables in both themes below.
 const pageStyles = `
 :root {
-  --dashboard-success-subtle: #dafbe1;
-  --dashboard-success-border: rgba(26, 127, 55, 0.3);
-  --dashboard-accent-subtle: #ddf4ff;
-  --dashboard-accent-border: rgba(9, 105, 218, 0.3);
-  --dashboard-attention-subtle: #fff8c5;
-  --dashboard-attention-border: rgba(154, 103, 0, 0.3);
-  --dashboard-danger-subtle: #ffebe9;
-  --dashboard-danger-border: rgba(209, 36, 47, 0.3);
-  --dashboard-neutral-subtle: var(--canvas-subtle);
+  --dashboard-success-subtle: #edf3ec;
+  --dashboard-success-border: rgba(68, 131, 97, 0.3);
+  --dashboard-accent-subtle: #faebdd;
+  --dashboard-accent-border: rgba(217, 115, 13, 0.3);
+  --dashboard-attention-subtle: #fbf3db;
+  --dashboard-attention-border: rgba(160, 116, 0, 0.3);
+  --dashboard-danger-subtle: #fdebec;
+  --dashboard-danger-border: rgba(212, 76, 71, 0.3);
+  --dashboard-neutral-subtle: var(--neutral-subtle);
 }
 :root[data-theme="dark"] {
-  --dashboard-success-subtle: rgba(63, 185, 80, 0.15);
-  --dashboard-success-border: rgba(63, 185, 80, 0.4);
-  --dashboard-accent-subtle: rgba(68, 147, 248, 0.15);
-  --dashboard-accent-border: rgba(68, 147, 248, 0.4);
-  --dashboard-attention-subtle: rgba(210, 153, 34, 0.15);
-  --dashboard-attention-border: rgba(210, 153, 34, 0.4);
-  --dashboard-danger-subtle: rgba(248, 81, 73, 0.15);
-  --dashboard-danger-border: rgba(248, 81, 73, 0.4);
-  --dashboard-neutral-subtle: rgba(145, 152, 161, 0.15);
+  --dashboard-success-subtle: rgba(86, 184, 119, 0.13);
+  --dashboard-success-border: rgba(86, 184, 119, 0.4);
+  --dashboard-accent-subtle: rgba(232, 145, 74, 0.14);
+  --dashboard-accent-border: rgba(232, 145, 74, 0.4);
+  --dashboard-attention-subtle: rgba(207, 164, 63, 0.14);
+  --dashboard-attention-border: rgba(207, 164, 63, 0.4);
+  --dashboard-danger-subtle: rgba(240, 122, 114, 0.12);
+  --dashboard-danger-border: rgba(240, 122, 114, 0.4);
+  --dashboard-neutral-subtle: rgba(255, 255, 255, 0.055);
 }
 
 .dashboard .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
@@ -54,8 +54,8 @@ const pageStyles = `
 .dashboard .dot.err { background: var(--danger-fg); }
 .dashboard .dot.idle { background: var(--fg-muted); }
 
-/* status pills — Primer Label style: subtle fill, semantic fg, hairline border */
-.dashboard .dpill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 10px; border-radius: 2em; border: 1px solid transparent; white-space: nowrap; }
+/* status pills — Notion soft pastel tags: tinted fill, semantic fg, hairline border */
+.dashboard .dpill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 10px; border-radius: var(--radius-sm); border: 1px solid transparent; white-space: nowrap; }
 .dashboard .dpill .dot { width: 7px; height: 7px; }
 .dashboard .dpill.ok { background: var(--dashboard-success-subtle); color: var(--success-fg); border-color: var(--dashboard-success-border); }
 .dashboard .dpill.run { background: var(--dashboard-accent-subtle); color: var(--accent-fg); border-color: var(--dashboard-accent-border); }
@@ -96,7 +96,7 @@ const pageStyles = `
 .dashboard .diagnostics li { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--border-muted); }
 .dashboard .diagnostics li:last-child { border-bottom: 0; }
 .dashboard .diagnostics .diag-msg { color: var(--fg-muted); }
-.dashboard .pill { display: inline-block; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 8px; border-radius: 2em; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--dashboard-neutral-subtle); }
+.dashboard .pill { display: inline-block; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--dashboard-neutral-subtle); }
 .dashboard .pill.pill--err { background: var(--dashboard-danger-subtle); color: var(--danger-fg); border-color: var(--dashboard-danger-border); }
 .dashboard .pill.pill--warn { background: var(--dashboard-attention-subtle); color: var(--attention-fg); border-color: var(--dashboard-attention-border); }
 

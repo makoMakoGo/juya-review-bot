@@ -100,10 +100,10 @@ export function renderMetricsTrendChart(rows, options = {}) {
 .metrics-trend-chart .metric-chart-grid line{stroke:var(--border-muted);stroke-width:1;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-jobs-area{fill:var(--accent-fg);fill-opacity:.08}
 .metrics-trend-chart .metric-chart-jobs-line{fill:none;stroke:var(--accent-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
-.metrics-trend-chart .metric-chart-success-line{fill:none;stroke:var(--success-fg);stroke-width:1.5;stroke-dasharray:4 4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-success-line{fill:none;stroke:var(--fg-muted);stroke-width:1.5;stroke-dasharray:4 4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-point{fill:var(--canvas-default);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-point-jobs{stroke:var(--accent-fg)}
-.metrics-trend-chart .metric-chart-point-success{stroke:var(--success-fg)}
+.metrics-trend-chart .metric-chart-point-success{stroke:var(--fg-muted)}
 @media(max-width:640px){.metrics-trend-chart .metric-chart-secondary{display:none}.metrics-trend-chart text{font-size:12px}}
 </style>
 <title id="metrics-trend-title">Daily jobs and success rate</title>

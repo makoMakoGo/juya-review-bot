@@ -4,7 +4,7 @@ export function metricsStyles() {
 .metrics-page * { box-sizing: border-box; }
 .metrics-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .metrics-toolbar .page-desc { margin: 0; }
-.metrics-segmented { display: inline-flex; align-items: center; max-width: 100%; gap: 2px; padding: 2px; border: 1px solid var(--border-default); border-radius: var(--radius); background: var(--canvas-subtle); }
+.metrics-segmented { display: inline-flex; align-items: center; max-width: 100%; gap: 2px; padding: 2px; border: 1px solid var(--border-default); border-radius: var(--radius); background: var(--neutral-subtle); }
 .metrics-segmented a { display: inline-flex; align-items: center; justify-content: center; min-width: 0; min-height: 26px; padding: 2px 10px; border-radius: 4px; color: var(--fg-muted); font-size: 12px; font-weight: 500; line-height: 18px; text-decoration: none; white-space: nowrap; }
 .metrics-segmented a:hover { color: var(--fg-default); text-decoration: none; }
 .metrics-segmented a[aria-current="page"] { color: var(--fg-default); background: var(--canvas-default); font-weight: 600; }

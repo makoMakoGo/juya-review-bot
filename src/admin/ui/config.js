@@ -199,7 +199,7 @@ function formatEditorValue(value) {
   return String(value);
 }
 
-// GitHub (Primer) settings-page styles. Scoped under .settings so shared
+// Notion warm-paper settings-page styles. Scoped under .settings so shared
 // component classes (.btn, .label, .flash…) stay owned by baseStyles().
 // Relies on the shared CSS custom properties (--canvas-*, --border-*,
 // --fg-*, --accent-fg, --danger-fg, --radius, --font-mono).
@@ -208,7 +208,7 @@ const CONFIG_PAGE_STYLES = `
 .settings-meta {
   display: flex; flex-wrap: wrap; gap: 4px 20px;
   margin: 0 0 24px; padding: 8px 16px;
-  background: var(--canvas-subtle);
+  background: var(--neutral-subtle);
   border: 1px solid var(--border-muted); border-radius: var(--radius);
   font-size: 12px; line-height: 1.8; color: var(--fg-muted);
 }
@@ -223,8 +223,8 @@ const CONFIG_PAGE_STYLES = `
   padding: 6px 10px; border-radius: var(--radius);
   font-size: 14px; font-weight: 400; color: var(--fg-default); text-decoration: none;
 }
-.settings-subnav-link:hover { background: var(--canvas-subtle); text-decoration: none; }
-.settings-subnav-link.is-active { background: var(--canvas-subtle); color: var(--fg-default); font-weight: 600; }
+.settings-subnav-link:hover { background: var(--wash); text-decoration: none; }
+.settings-subnav-link.is-active { background: var(--wash-strong); color: var(--fg-default); font-weight: 500; }
 .settings-count {
   display: inline-block; min-width: 20px; padding: 0 6px;
   font-size: 12px; font-weight: 500; line-height: 18px; text-align: center;
