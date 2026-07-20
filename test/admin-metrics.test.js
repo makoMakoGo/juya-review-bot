@@ -72,6 +72,10 @@ test('metrics view rejects stringly typed internal counters', () => {
 
 test('chart view is full-width, shareable, escaped, and contains no metrics table scroll shell', () => {
   const unsafe = structuredClone(stats);
+  // Anchor trend days to the current date: the 7d window filters dailyTrend
+  // against Date.now(), so fixed historical dates would age out of the window.
+  const day = offsetDays => new Date(Date.now() - offsetDays * 86_400_000).toISOString().slice(0, 10);
+  unsafe.dailyTrend = unsafe.dailyTrend.map((row, index) => ({ ...row, day: day(6 - index * 3) }));
   unsafe.windows['7d'].repositories['<script>alert(1)</script>'] = { jobs: 99, successRate: 0, failed: 99 };
   const html = renderMetricsPage({ stats: unsafe, window: '7d', trend: 'chart' });
 
