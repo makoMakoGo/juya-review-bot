@@ -2,6 +2,7 @@ import { PRODUCT } from '../../brand.js';
 import { escapeAttribute, escapeHtml } from './helpers.js';
 import { renderAlert } from './partials.js';
 import { baseStyles, bodyScript, fontLinks, themeInitScript, togglesHtml } from './layout.js';
+import { skinStyles } from './themes/index.js';
 
 export function renderLoginPage({ csrfToken = '', error = '', disabledReason = '', cspNonce = '' } = {}) {
   const disabled = disabledReason !== '';
@@ -21,7 +22,7 @@ export function renderLoginPage({ csrfToken = '', error = '', disabledReason = '
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in · ${escapeHtml(PRODUCT.consoleName)}</title>
 <link rel="icon" type="image/jpeg" href="${escapeAttribute(PRODUCT.iconPath)}">
-${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}</style>
+${fontLinks()}${themeInitScript(cspNonce)}<style>${baseStyles()}${skinStyles()}</style>
 </head>
 <body class="login-body">
 <div class="login-shell">

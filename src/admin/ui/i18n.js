@@ -4,6 +4,7 @@ export const I18N = {
   en: {
     nav_dashboard: 'Status', nav_jobs: 'Jobs', nav_metrics: 'Metrics', nav_config: 'Settings', nav_brand_tag: 'self-hosted', nav_side_foot: `Powered by ${ENGINE.name}`, signout: 'Sign out',
     toggle_theme: 'Toggle theme', toggle_theme_dark: 'Switch to dark theme', toggle_theme_light: 'Switch to light theme',
+    skin: 'Skin', skin_primer: 'Primer', skin_notion: 'Notion', skin_linear: 'Linear', skin_terminal: 'Terminal',
     toggle_lang: 'Switch language', toggle_lang_en: 'Switch to English', toggle_lang_zh: 'Switch to Chinese',
     page_dashboard: 'Status', page_jobs: 'Jobs', page_metrics: 'Metrics', page_config: 'Settings', jobs_page_desc: 'Review queue history, filter failures, and open job detail logs.', overview_page_desc: 'Service health, queue, and current activity.', metrics_page_desc: 'Latency, comment volume, failure classification, and repository success trends.', config_page_desc: 'Runtime configuration with audit trail. High-risk fields require confirmation.', btn_view_metrics: 'Open metrics →',
     login_title: 'Sign in', login_sub: `${PRODUCT.name} administration`, login_prompt: 'Enter the admin password',
@@ -45,6 +46,7 @@ export const I18N = {
   zh: {
     nav_dashboard: '状态', nav_jobs: '任务', nav_metrics: '指标', nav_config: '设置', nav_brand_tag: '自托管', nav_side_foot: `Powered by ${ENGINE.name}`, signout: '退出',
     toggle_theme: '切换主题', toggle_theme_dark: '切换到深色主题', toggle_theme_light: '切换到浅色主题',
+    skin: '主题', skin_primer: 'Primer', skin_notion: 'Notion', skin_linear: 'Linear', skin_terminal: 'Terminal',
     toggle_lang: '切换语言', toggle_lang_en: '切换到英文', toggle_lang_zh: '切换到中文',
     page_dashboard: '状态', page_jobs: '任务', page_metrics: '指标', page_config: '设置', metrics_page_desc: '耗时、评论量、失败分类与仓库成功率趋势。', btn_view_metrics: '打开指标 →', jobs_page_desc: '查看任务历史、筛选失败并打开任务日志。', overview_page_desc: '服务健康、队列与当前动态。', config_page_desc: '运行时配置带审计记录。高风险字段需确认。',
     login_title: '登录', login_sub: `${PRODUCT.name} administration`, login_prompt: '输入管理员密码',
