@@ -199,12 +199,12 @@ function formatEditorValue(value) {
   return String(value);
 }
 
-// GitHub (Primer) settings-page styles. Scoped under .settings so shared
+// Terminal settings-page styles. Scoped under .settings so shared
 // component classes (.btn, .label, .flash…) stay owned by baseStyles().
 // Relies on the shared CSS custom properties (--canvas-*, --border-*,
 // --fg-*, --accent-fg, --danger-fg, --radius, --font-mono).
 const CONFIG_PAGE_STYLES = `
-.settings .page-desc { margin: 0 0 12px; font-size: 14px; color: var(--fg-muted); }
+.settings .page-desc { margin: 0 0 12px; font-size: 13px; color: var(--fg-muted); }
 .settings-meta {
   display: flex; flex-wrap: wrap; gap: 4px 20px;
   margin: 0 0 24px; padding: 8px 16px;
@@ -221,16 +221,16 @@ const CONFIG_PAGE_STYLES = `
 .settings-subnav-link {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 6px 10px; border-radius: var(--radius);
-  font-size: 14px; font-weight: 400; color: var(--fg-default); text-decoration: none;
+  font-size: 13px; font-weight: 400; color: var(--fg-default); text-decoration: none;
 }
 .settings-subnav-link:hover { background: var(--canvas-subtle); text-decoration: none; }
-.settings-subnav-link.is-active { background: var(--canvas-subtle); color: var(--fg-default); font-weight: 600; }
+.settings-subnav-link.is-active { background: var(--canvas-subtle); color: var(--accent-fg); font-weight: 600; box-shadow: inset 2px 0 0 var(--accent-fg); }
 .settings-count {
   display: inline-block; min-width: 20px; padding: 0 6px;
   font-size: 12px; font-weight: 500; line-height: 18px; text-align: center;
   color: var(--fg-muted);
   background: color-mix(in srgb, var(--fg-muted) 14%, transparent);
-  border: 0; border-radius: 20px;
+  border: 0; border-radius: 2px;
 }
 .settings-panel {
   background: var(--canvas-default);

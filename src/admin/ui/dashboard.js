@@ -2,33 +2,33 @@ import { escapeHtml, formatBytes, formatDate, formatDuration, formatRepository, 
 import { diagnosticCode, jobIdCodeLink, jobIdRow, jobStatusPill, mapServiceHealth, renderDiagnosticsList } from './partials.js';
 import { renderLayout } from './layout.js';
 
-// GitHub Primer look for the status dashboard. Everything is scoped under
+// Terminal / CLI look for the status dashboard. Everything is scoped under
 // .dashboard so baseStyles stays untouched; only the shared custom
 // properties (--canvas-*, --fg-*, --border-*, semantic *-fg) are referenced.
 // Pill/badge fills need per-theme subtle backgrounds, which are defined as
 // page-scoped variables in both themes below.
 const pageStyles = `
 :root {
-  --dashboard-success-subtle: #dafbe1;
-  --dashboard-success-border: rgba(26, 127, 55, 0.3);
-  --dashboard-accent-subtle: #ddf4ff;
-  --dashboard-accent-border: rgba(9, 105, 218, 0.3);
-  --dashboard-attention-subtle: #fff8c5;
-  --dashboard-attention-border: rgba(154, 103, 0, 0.3);
-  --dashboard-danger-subtle: #ffebe9;
-  --dashboard-danger-border: rgba(209, 36, 47, 0.3);
-  --dashboard-neutral-subtle: var(--canvas-subtle);
+  --dashboard-success-subtle: rgba(74, 222, 128, 0.12);
+  --dashboard-success-border: rgba(74, 222, 128, 0.35);
+  --dashboard-accent-subtle: rgba(74, 222, 128, 0.10);
+  --dashboard-accent-border: rgba(74, 222, 128, 0.35);
+  --dashboard-attention-subtle: rgba(251, 191, 36, 0.12);
+  --dashboard-attention-border: rgba(251, 191, 36, 0.35);
+  --dashboard-danger-subtle: rgba(248, 113, 113, 0.10);
+  --dashboard-danger-border: rgba(248, 113, 113, 0.35);
+  --dashboard-neutral-subtle: rgba(124, 154, 128, 0.14);
 }
-:root[data-theme="dark"] {
-  --dashboard-success-subtle: rgba(63, 185, 80, 0.15);
-  --dashboard-success-border: rgba(63, 185, 80, 0.4);
-  --dashboard-accent-subtle: rgba(68, 147, 248, 0.15);
-  --dashboard-accent-border: rgba(68, 147, 248, 0.4);
-  --dashboard-attention-subtle: rgba(210, 153, 34, 0.15);
-  --dashboard-attention-border: rgba(210, 153, 34, 0.4);
-  --dashboard-danger-subtle: rgba(248, 81, 73, 0.15);
-  --dashboard-danger-border: rgba(248, 81, 73, 0.4);
-  --dashboard-neutral-subtle: rgba(145, 152, 161, 0.15);
+:root[data-theme="light"] {
+  --dashboard-success-subtle: rgba(21, 128, 61, 0.12);
+  --dashboard-success-border: rgba(21, 128, 61, 0.40);
+  --dashboard-accent-subtle: rgba(21, 128, 61, 0.10);
+  --dashboard-accent-border: rgba(21, 128, 61, 0.40);
+  --dashboard-attention-subtle: rgba(180, 83, 9, 0.10);
+  --dashboard-attention-border: rgba(180, 83, 9, 0.40);
+  --dashboard-danger-subtle: rgba(185, 28, 28, 0.08);
+  --dashboard-danger-border: rgba(185, 28, 28, 0.40);
+  --dashboard-neutral-subtle: rgba(90, 107, 90, 0.12);
 }
 
 .dashboard .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
@@ -46,23 +46,25 @@ const pageStyles = `
 .dashboard .st .v { font-size: 20px; font-weight: 600; line-height: 1.25; color: var(--fg-default); }
 .dashboard .st .v .dpill { font-size: 12px; font-weight: 500; }
 
-/* status dot — shared markup with partials.js, restyled on Primer colors */
-.dashboard .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+/* status dot — square console markers */
+.dashboard .dot { width: 8px; height: 8px; border-radius: 0; flex: none; display: inline-block; }
 .dashboard .dot.ok { background: var(--success-fg); }
 .dashboard .dot.run { background: var(--accent-fg); }
 .dashboard .dot.warn { background: var(--attention-fg); }
 .dashboard .dot.err { background: var(--danger-fg); }
 .dashboard .dot.idle { background: var(--fg-muted); }
 
-/* status pills — Primer Label style: subtle fill, semantic fg, hairline border */
-.dashboard .dpill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 10px; border-radius: 2em; border: 1px solid transparent; white-space: nowrap; }
-.dashboard .dpill .dot { width: 7px; height: 7px; }
-.dashboard .dpill.ok { background: var(--dashboard-success-subtle); color: var(--success-fg); border-color: var(--dashboard-success-border); }
-.dashboard .dpill.run { background: var(--dashboard-accent-subtle); color: var(--accent-fg); border-color: var(--dashboard-accent-border); }
-.dashboard .dpill.queued { background: var(--dashboard-neutral-subtle); color: var(--fg-muted); border-color: var(--border-default); }
-.dashboard .dpill.warn { background: var(--dashboard-attention-subtle); color: var(--attention-fg); border-color: var(--dashboard-attention-border); }
-.dashboard .dpill.fail { background: var(--dashboard-danger-subtle); color: var(--danger-fg); border-color: var(--dashboard-danger-border); }
-.dashboard .dpill.skip { background: var(--dashboard-neutral-subtle); color: var(--fg-muted); border-color: var(--border-default); }
+/* status pills — bracketed console status: [ success ] / [ failed ] */
+.dashboard .dpill { display: inline-flex; align-items: center; gap: 0; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 2px; border-radius: 0; border: 0; white-space: nowrap; }
+.dashboard .dpill::before { content: "["; opacity: 0.55; }
+.dashboard .dpill::after { content: "]"; opacity: 0.55; }
+.dashboard .dpill .dot { display: none; }
+.dashboard .dpill.ok { background: transparent; color: var(--success-fg); border-color: var(--dashboard-success-border); }
+.dashboard .dpill.run { background: transparent; color: var(--accent-fg); border-color: var(--dashboard-accent-border); }
+.dashboard .dpill.queued { background: transparent; color: var(--fg-muted); border-color: var(--border-default); }
+.dashboard .dpill.warn { background: transparent; color: var(--attention-fg); border-color: var(--dashboard-attention-border); }
+.dashboard .dpill.fail { background: transparent; color: var(--danger-fg); border-color: var(--dashboard-danger-border); }
+.dashboard .dpill.skip { background: transparent; color: var(--fg-muted); border-color: var(--border-default); }
 
 /* description-list groups — repo 'About' box: muted key left, value right, hairline rows */
 .dashboard .status-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 16px; }
@@ -96,9 +98,11 @@ const pageStyles = `
 .dashboard .diagnostics li { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; padding: 8px 0; border-bottom: 1px solid var(--border-muted); }
 .dashboard .diagnostics li:last-child { border-bottom: 0; }
 .dashboard .diagnostics .diag-msg { color: var(--fg-muted); }
-.dashboard .pill { display: inline-block; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 8px; border-radius: 2em; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--dashboard-neutral-subtle); }
-.dashboard .pill.pill--err { background: var(--dashboard-danger-subtle); color: var(--danger-fg); border-color: var(--dashboard-danger-border); }
-.dashboard .pill.pill--warn { background: var(--dashboard-attention-subtle); color: var(--attention-fg); border-color: var(--dashboard-attention-border); }
+.dashboard .pill { display: inline-block; font-size: 12px; font-weight: 500; line-height: 18px; padding: 0 2px; border-radius: 0; border: 0; color: var(--fg-muted); background: transparent; }
+.dashboard .pill::before { content: "["; opacity: 0.55; }
+.dashboard .pill::after { content: "]"; opacity: 0.55; }
+.dashboard .pill.pill--err { background: transparent; color: var(--danger-fg); border-color: transparent; }
+.dashboard .pill.pill--warn { background: transparent; color: var(--attention-fg); border-color: transparent; }
 
 /* empty states sit inside the shared .blankslate */
 .dashboard .blankslate .empty { margin: 0; color: var(--fg-muted); }

@@ -3,9 +3,9 @@ import { jobStatusPill, renderAlert, renderDiagnosticsList } from './partials.js
 import { renderLayout } from './layout.js';
 import { I18N } from './i18n.js';
 
-// Page-specific styles for the jobs list and job detail pages (GitHub Primer look).
+// Page-specific styles for the jobs list and job detail pages (terminal/CLI look).
 const pageStyles = `
-/* Jobs list: issue-list style table inside a bordered list container. */
+/* Jobs list: console-output table inside a drawn box container. */
 .jobs-page > .page-desc { margin: 0 0 16px; max-width: 68ch; }
 .tablewrap { border: 1px solid var(--border-default); border-radius: var(--radius); background: var(--canvas-default); overflow: hidden; margin-bottom: 16px; }
 .tablewrap .bar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 16px; background: var(--canvas-subtle); border-bottom: 1px solid var(--border-muted); }
@@ -13,10 +13,10 @@ const pageStyles = `
 .tablewrap .bar.bar-foot { border-top: 1px solid var(--border-muted); border-bottom: 0; }
 .job-filters { margin: 0; }
 .job-filters .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.jobs-page .chip { font-family: inherit; font-size: 12px; font-weight: 500; line-height: 18px; padding: 3px 10px; border-radius: 2em; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--canvas-default); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none; appearance: none; -webkit-appearance: none; }
+.jobs-page .chip { font-family: inherit; font-size: 12px; font-weight: 500; line-height: 18px; padding: 3px 10px; border-radius: 2px; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--canvas-default); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none; appearance: none; -webkit-appearance: none; }
 .jobs-page .chip:hover { color: var(--fg-default); background: var(--canvas-subtle); text-decoration: none; }
 .jobs-page .chip.on { color: var(--accent-fg); border-color: var(--accent-fg); font-weight: 600; }
-/* Advanced filters: subtle search/filter row with Primer inputs. */
+/* Advanced filters: subtle search/filter row. */
 .adv-filters > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--fg-muted); border-top: 1px solid var(--border-muted); background: var(--canvas-default); }
 .adv-filters > summary::-webkit-details-marker { display: none; }
 .adv-filters > summary::before { content: ''; width: 0; height: 0; border-left: 4px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
@@ -43,7 +43,7 @@ const pageStyles = `
 .mono-link code { color: var(--accent-fg); background: transparent; border: 0; padding: 0; }
 .mono-link:hover code { text-decoration: underline; }
 .empty-state { padding: 32px 16px; text-align: center; color: var(--fg-muted); }
-/* GitHub-style pager. */
+/* Pager. */
 .tablewrap nav.pagination { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 0; padding: 0; border: 0; }
 .tablewrap nav.pagination a, .tablewrap nav.pagination span[aria-disabled=true] { display: inline-flex; align-items: center; min-height: 32px; padding: 5px 12px; font-size: 14px; font-weight: 500; color: var(--accent-fg); background: var(--canvas-default); border: 1px solid var(--border-default); border-radius: var(--radius); text-decoration: none; }
 .tablewrap nav.pagination a:hover { background: var(--canvas-subtle); text-decoration: none; }
