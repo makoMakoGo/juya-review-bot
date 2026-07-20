@@ -3,7 +3,7 @@ import { jobStatusPill, renderAlert, renderDiagnosticsList } from './partials.js
 import { renderLayout } from './layout.js';
 import { I18N } from './i18n.js';
 
-// Page-specific styles for the jobs list and job detail pages (GitHub Primer look).
+// Page-specific styles for the jobs list and job detail pages (Linear/Vercel look).
 const pageStyles = `
 /* Jobs list: issue-list style table inside a bordered list container. */
 .jobs-page > .page-desc { margin: 0 0 16px; max-width: 68ch; }
@@ -15,7 +15,7 @@ const pageStyles = `
 .job-filters .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .jobs-page .chip { font-family: inherit; font-size: 12px; font-weight: 500; line-height: 18px; padding: 3px 10px; border-radius: 2em; border: 1px solid var(--border-default); color: var(--fg-muted); background: var(--canvas-default); cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; text-decoration: none; appearance: none; -webkit-appearance: none; }
 .jobs-page .chip:hover { color: var(--fg-default); background: var(--canvas-subtle); text-decoration: none; }
-.jobs-page .chip.on { color: var(--accent-fg); border-color: var(--accent-fg); font-weight: 600; }
+.jobs-page .chip.on { color: var(--accent-fg); background: var(--accent-subtle); border-color: var(--accent-border); font-weight: 600; }
 /* Advanced filters: subtle search/filter row with Primer inputs. */
 .adv-filters > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--fg-muted); border-top: 1px solid var(--border-muted); background: var(--canvas-default); }
 .adv-filters > summary::-webkit-details-marker { display: none; }

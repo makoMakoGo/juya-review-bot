@@ -15,7 +15,7 @@ export function renderLoginPage({ csrfToken = '', error = '', disabledReason = '
 <button type="submit" class="primary" data-i18n="sign_in">Sign in</button>
 </form>`;
   return `<!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

@@ -2,33 +2,33 @@ import { escapeHtml, formatBytes, formatDate, formatDuration, formatRepository, 
 import { diagnosticCode, jobIdCodeLink, jobIdRow, jobStatusPill, mapServiceHealth, renderDiagnosticsList } from './partials.js';
 import { renderLayout } from './layout.js';
 
-// GitHub Primer look for the status dashboard. Everything is scoped under
+// Linear/Vercel look for the status dashboard. Everything is scoped under
 // .dashboard so baseStyles stays untouched; only the shared custom
 // properties (--canvas-*, --fg-*, --border-*, semantic *-fg) are referenced.
 // Pill/badge fills need per-theme subtle backgrounds, which are defined as
 // page-scoped variables in both themes below.
 const pageStyles = `
 :root {
-  --dashboard-success-subtle: #dafbe1;
-  --dashboard-success-border: rgba(26, 127, 55, 0.3);
-  --dashboard-accent-subtle: #ddf4ff;
-  --dashboard-accent-border: rgba(9, 105, 218, 0.3);
-  --dashboard-attention-subtle: #fff8c5;
-  --dashboard-attention-border: rgba(154, 103, 0, 0.3);
-  --dashboard-danger-subtle: #ffebe9;
-  --dashboard-danger-border: rgba(209, 36, 47, 0.3);
+  --dashboard-success-subtle: rgba(47, 148, 97, 0.10);
+  --dashboard-success-border: rgba(47, 148, 97, 0.30);
+  --dashboard-accent-subtle: rgba(94, 106, 210, 0.10);
+  --dashboard-accent-border: rgba(94, 106, 210, 0.30);
+  --dashboard-attention-subtle: rgba(242, 201, 76, 0.22);
+  --dashboard-attention-border: rgba(176, 125, 16, 0.30);
+  --dashboard-danger-subtle: rgba(220, 76, 76, 0.08);
+  --dashboard-danger-border: rgba(220, 76, 76, 0.30);
   --dashboard-neutral-subtle: var(--canvas-subtle);
 }
 :root[data-theme="dark"] {
-  --dashboard-success-subtle: rgba(63, 185, 80, 0.15);
-  --dashboard-success-border: rgba(63, 185, 80, 0.4);
-  --dashboard-accent-subtle: rgba(68, 147, 248, 0.15);
-  --dashboard-accent-border: rgba(68, 147, 248, 0.4);
-  --dashboard-attention-subtle: rgba(210, 153, 34, 0.15);
-  --dashboard-attention-border: rgba(210, 153, 34, 0.4);
-  --dashboard-danger-subtle: rgba(248, 81, 73, 0.15);
-  --dashboard-danger-border: rgba(248, 81, 73, 0.4);
-  --dashboard-neutral-subtle: rgba(145, 152, 161, 0.15);
+  --dashboard-success-subtle: rgba(76, 183, 130, 0.13);
+  --dashboard-success-border: rgba(76, 183, 130, 0.32);
+  --dashboard-accent-subtle: rgba(130, 143, 255, 0.14);
+  --dashboard-accent-border: rgba(130, 143, 255, 0.30);
+  --dashboard-attention-subtle: rgba(242, 201, 76, 0.12);
+  --dashboard-attention-border: rgba(242, 201, 76, 0.30);
+  --dashboard-danger-subtle: rgba(240, 112, 112, 0.12);
+  --dashboard-danger-border: rgba(240, 112, 112, 0.32);
+  --dashboard-neutral-subtle: rgba(255, 255, 255, 0.07);
 }
 
 .dashboard .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin: 0 0 24px; }
@@ -43,7 +43,7 @@ const pageStyles = `
 .dashboard .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
 .dashboard .st { display: flex; flex-direction: column; gap: 6px; padding: 16px; border: 1px solid var(--border-default); border-radius: var(--radius); background: var(--canvas-default); }
 .dashboard .st .k { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg-muted); }
-.dashboard .st .v { font-size: 20px; font-weight: 600; line-height: 1.25; color: var(--fg-default); }
+.dashboard .st .v { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; line-height: 1.25; color: var(--fg-default); }
 .dashboard .st .v .dpill { font-size: 12px; font-weight: 500; }
 
 /* status dot — shared markup with partials.js, restyled on Primer colors */

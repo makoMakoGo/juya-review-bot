@@ -199,7 +199,7 @@ function formatEditorValue(value) {
   return String(value);
 }
 
-// GitHub (Primer) settings-page styles. Scoped under .settings so shared
+// Linear/Vercel settings-page styles. Scoped under .settings so shared
 // component classes (.btn, .label, .flash…) stay owned by baseStyles().
 // Relies on the shared CSS custom properties (--canvas-*, --border-*,
 // --fg-*, --accent-fg, --danger-fg, --radius, --font-mono).
@@ -224,7 +224,7 @@ const CONFIG_PAGE_STYLES = `
   font-size: 14px; font-weight: 400; color: var(--fg-default); text-decoration: none;
 }
 .settings-subnav-link:hover { background: var(--canvas-subtle); text-decoration: none; }
-.settings-subnav-link.is-active { background: var(--canvas-subtle); color: var(--fg-default); font-weight: 600; }
+.settings-subnav-link.is-active { background: var(--accent-subtle); color: var(--accent-fg); font-weight: 600; }
 .settings-count {
   display: inline-block; min-width: 20px; padding: 0 6px;
   font-size: 12px; font-weight: 500; line-height: 18px; text-align: center;

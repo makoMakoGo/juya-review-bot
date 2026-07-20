@@ -96,10 +96,10 @@ export function renderMetricsTrendChart(rows, options = {}) {
 
   return `<svg class="metrics-trend-chart" viewBox="0 0 ${chart.width} ${chart.height}" style="display:block;width:100%;height:auto;max-width:100%" role="img" aria-labelledby="metrics-trend-title metrics-trend-desc" preserveAspectRatio="xMidYMid meet" focusable="false">
 <style>
-.metrics-trend-chart text{fill:var(--fg-muted);font-family:var(--font-sans);font-size:11px}
+.metrics-trend-chart text{fill:var(--fg-muted);font-family:var(--font-mono);font-size:11px}
 .metrics-trend-chart .metric-chart-grid line{stroke:var(--border-muted);stroke-width:1;vector-effect:non-scaling-stroke}
-.metrics-trend-chart .metric-chart-jobs-area{fill:var(--accent-fg);fill-opacity:.08}
-.metrics-trend-chart .metric-chart-jobs-line{fill:none;stroke:var(--accent-fg);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.metrics-trend-chart .metric-chart-jobs-area{fill:var(--accent-fg);fill-opacity:.06}
+.metrics-trend-chart .metric-chart-jobs-line{fill:none;stroke:var(--accent-fg);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-success-line{fill:none;stroke:var(--success-fg);stroke-width:1.5;stroke-dasharray:4 4;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-point{fill:var(--canvas-default);stroke-width:1.5;vector-effect:non-scaling-stroke}
 .metrics-trend-chart .metric-chart-point-jobs{stroke:var(--accent-fg)}
