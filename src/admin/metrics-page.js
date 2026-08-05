@@ -88,8 +88,8 @@ function renderTrendSection(view, selectedTrend) {
     ? renderDailyData(view.dailyTrend)
     : renderDailyChart(view.dailyTrend);
 
-  return `<section class="box" aria-labelledby="metrics-daily-title">
-  <div class="box-header">
+  return `<section class="card" aria-labelledby="metrics-daily-title">
+  <div class="card-header">
     <div class="metrics-section-heading"><strong id="metrics-daily-title" data-i18n="m_daily_trend">Daily trend</strong><small>${escapeHtml(view.metricsWindow.label)}</small></div>
     <nav class="metrics-segmented" aria-label="Trend view" data-i18n-aria-label="metrics_trend_view">${trendLinks}</nav>
   </div>
@@ -130,7 +130,7 @@ function renderFailureSection(view) {
       return `<li class="metrics-list-item"><div class="metrics-list-line"><span class="metrics-list-name" title="${escapeAttribute(item.kind)}">${escapeHtml(item.kind)}</span><span class="metrics-list-meta">${escapeHtml(item.count)} · ${escapeHtml(formatPercent(share))}</span></div><span class="metrics-bar" aria-hidden="true"><span class="metrics-bar-fill" style="width:${escapeAttribute(barPercent(share))}%"></span></span></li>`;
     }).join('')}</ol>`;
 
-  return `<section class="box" aria-labelledby="metrics-failures-title"><div class="box-header"><strong id="metrics-failures-title" data-i18n="m_fail_class">Failure classification</strong><span class="box-header-meta muted">${escapeHtml(numberOrDash(view.bucket.failed))}</span></div>${body}</section>`;
+  return `<section class="card" aria-labelledby="metrics-failures-title"><div class="card-header"><strong id="metrics-failures-title" data-i18n="m_fail_class">Failure classification</strong><span class="muted">${escapeHtml(numberOrDash(view.bucket.failed))}</span></div>${body}</section>`;
 }
 
 function renderRepositorySection(view) {
@@ -142,7 +142,7 @@ function renderRepositorySection(view) {
       return `<li class="metrics-list-item"><div class="metrics-list-line"><span class="metrics-list-name" title="${escapeAttribute(repository.name)}">${escapeHtml(repository.name)}</span><span class="metrics-list-meta"><span data-i18n="th_jobs">Jobs</span> ${escapeHtml(repository.jobs)} · <span data-i18n="th_success_rate">Success rate</span> ${escapeHtml(formatPercent(repository.successRate))}</span></div><span class="metrics-bar" aria-hidden="true"><span class="metrics-bar-fill" style="width:${escapeAttribute(barPercent(relative))}%"></span></span></li>`;
     }).join('')}</ol>`;
 
-  return `<section class="box" aria-labelledby="metrics-repositories-title"><div class="box-header"><strong id="metrics-repositories-title" data-i18n="th_repository">Repository</strong><span class="box-header-meta muted">${escapeHtml(view.repositories.length)}</span></div>${body}</section>`;
+  return `<section class="card" aria-labelledby="metrics-repositories-title"><div class="card-header"><strong id="metrics-repositories-title" data-i18n="th_repository">Repository</strong><span class="muted">${escapeHtml(view.repositories.length)}</span></div>${body}</section>`;
 }
 
 function renderComparisonSection(view) {
@@ -157,7 +157,7 @@ function renderComparisonSection(view) {
     return `<article class="metrics-comparison-item"${current}><div class="metrics-comparison-title"><strong>${windowLabelHtml(row)}</strong><span>${escapeHtml(formatPercent(row.bucket.successRate))}</span></div><div class="metrics-comparison-values">${values}</div></article>`;
   }).join('');
 
-  return `<section class="box" aria-labelledby="metrics-comparison-title"><div class="box-header"><strong id="metrics-comparison-title" data-i18n="metrics_window_comparison">Window comparison</strong></div><div class="metrics-comparison-grid">${items}</div></section>`;
+  return `<section class="card" aria-labelledby="metrics-comparison-title"><div class="card-header"><strong id="metrics-comparison-title" data-i18n="metrics_window_comparison">Window comparison</strong></div><div class="metrics-comparison-grid">${items}</div></section>`;
 }
 
 function segmentedLink({ href, labelHtml, selected }) {
